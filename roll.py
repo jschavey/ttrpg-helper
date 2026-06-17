@@ -62,11 +62,33 @@ def roll_pool(notation):
     print(f"  Total: {total}{flag_str}")
 
 
+DIFFICULTY_TABLE = [
+    ("Very Easy",      "1-5"),
+    ("Easy",           "6-10"),
+    ("Moderate",       "11-15"),
+    ("Difficult",      "16-20"),
+    ("Very Difficult", "21-30"),
+    ("Heroic",         "31+"),
+]
+
+
+def print_difficulty_table():
+    print("\n  Difficulty Reference:")
+    print("  +-----------------+-------+")
+    print("  | Difficulty      | Score |")
+    print("  +-----------------+-------+")
+    for label, score in DIFFICULTY_TABLE:
+        print(f"  | {label:<15}  | {score:<5} |")
+    print("  +-----------------+-------+")
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python roll.py <notation> [notation ...]")
         print("Examples: python roll.py 6D    python roll.py 4D+2")
         sys.exit(1)
+
+    print_difficulty_table()
 
     for arg in sys.argv[1:]:
         roll_pool(arg)
