@@ -99,9 +99,69 @@ def run_star_wars():
             roll_pool(notation)
 
 
+def parse_shadowdark_notation(notation):
+    """Parse notation like 2D6+1, D20, 3D8-2. Returns ([(count, sides), ...], modifier)."""
+    notation = notation.strip().upper()
+    # Strip optional leading spaces around + or -
+    match = re.fullmatch(r'((?:\d*D\d+)(?:[+\-]\d*D\d+)*)(([+\-]\d+))?', notation)
+    if not match:
+        print(f"Invalid notation: '{notation}'. Use format like '2D6', 'D20+3', '2D6+1D4-2'.")
+        return None
+
+    pools_str = match.group(1)
+    modifier_str = match.group(3)  # e.g. "+1" or "-3"
+
+    pool_pattern = re.findall(r'([+\-]?)(\d*)D(\d+)', pools_str)
+    pools = []
+    for sign, count_str, sides_str in pool_pattern:
+        count = int(count_str) if count_str else 1
+        sides = int(sides_str)
+        if sign == '-':
+            count = -count
+        pools.append((count, sides))
+
+    modifier = int(modifier_str) if modifier_str else 0
+    return pools, modifier
+
+
+def roll_shadowdark(notation):
+    result = parse_shadowdark_notation(notation)
+    if result is None:
+        return
+    pools, modifier = result
+
+    print(f"\nRolling {notation}:")
+
+    all_rolls = []
+    for count, sides in pools:
+        sign = -1 if count < 0 else 1
+        for _ in range(abs(count)):
+            roll = random.randint(1, sides)
+            all_rolls.append(sign * roll)
+            label = f"d{sides}" if sign == 1 else f"-d{sides}"
+            print(f"  {label}: {roll}")
+
+    dice_total = sum(all_rolls)
+    total = dice_total + modifier
+
+    if modifier:
+        mod_str = f"{modifier:+d}"
+        print(f"\n  Dice: {dice_total}  {mod_str}")
+    print(f"  Total: {total}")
+
+
 def run_shadowdark():
-    print("\nShadowdark system not yet implemented.")
-    input("Press Enter to return to menu...")
+    print("\nEnter dice notation (e.g. D20, 2D6+1, D20-3) or 'q' to quit.")
+    while True:
+        try:
+            notation = input("\nRoll> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if notation.lower() in ("q", "quit", "exit"):
+            break
+        if notation:
+            roll_shadowdark(notation)
 
 
 def main_menu():
