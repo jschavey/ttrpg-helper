@@ -124,44 +124,84 @@ def parse_shadowdark_notation(notation):
     return pools, modifier
 
 
-def roll_shadowdark(notation):
-    result = parse_shadowdark_notation(notation)
-    if result is None:
-        return
-    pools, modifier = result
-
-    print(f"\nRolling {notation}:")
-
+def _roll_once(pools, modifier, label):
+    print(f"  [{label}]")
     all_rolls = []
     for count, sides in pools:
         sign = -1 if count < 0 else 1
         for _ in range(abs(count)):
             roll = random.randint(1, sides)
             all_rolls.append(sign * roll)
-            label = f"d{sides}" if sign == 1 else f"-d{sides}"
-            print(f"  {label}: {roll}")
-
+            die_label = f"d{sides}" if sign == 1 else f"-d{sides}"
+            print(f"    {die_label}: {roll}")
     dice_total = sum(all_rolls)
     total = dice_total + modifier
-
     if modifier:
-        mod_str = f"{modifier:+d}"
-        print(f"\n  Dice: {dice_total}  {mod_str}")
-    print(f"  Total: {total}")
+        print(f"    Dice: {dice_total}  {modifier:+d}")
+    print(f"    Subtotal: {total}")
+    return total
+
+
+def roll_shadowdark(notation, advantage=None):
+    result = parse_shadowdark_notation(notation)
+    if result is None:
+        return
+    pools, modifier = result
+
+    adv_label = " (advantage)" if advantage is True else " (disadvantage)" if advantage is False else ""
+    print(f"\nRolling {notation}{adv_label}:")
+
+    if advantage is None:
+        all_rolls = []
+        for count, sides in pools:
+            sign = -1 if count < 0 else 1
+            for _ in range(abs(count)):
+                roll = random.randint(1, sides)
+                all_rolls.append(sign * roll)
+                label = f"d{sides}" if sign == 1 else f"-d{sides}"
+                print(f"  {label}: {roll}")
+        dice_total = sum(all_rolls)
+        total = dice_total + modifier
+        if modifier:
+            print(f"\n  Dice: {dice_total}  {modifier:+d}")
+        print(f"  Total: {total}")
+    else:
+        total_a = _roll_once(pools, modifier, "Roll 1")
+        total_b = _roll_once(pools, modifier, "Roll 2")
+        if advantage:
+            chosen = max(total_a, total_b)
+            rule = "higher"
+        else:
+            chosen = min(total_a, total_b)
+            rule = "lower"
+        print(f"\n  Taking {rule}: {chosen}")
 
 
 def run_shadowdark():
     print("\nEnter dice notation (e.g. D20, 2D6+1, D20-3) or 'q' to quit.")
+    print("Append 'a' for advantage or 'd' for disadvantage (e.g. 2D6+1 a, D20 d).")
     while True:
         try:
-            notation = input("\nRoll> ").strip()
+            raw = input("\nRoll> ").strip()
         except (EOFError, KeyboardInterrupt):
             print()
             break
-        if notation.lower() in ("q", "quit", "exit"):
+        if raw.lower() in ("q", "quit", "exit"):
             break
-        if notation:
-            roll_shadowdark(notation)
+        if not raw:
+            continue
+        parts = raw.split()
+        suffix = parts[-1].lower() if len(parts) > 1 else ""
+        if suffix == "a":
+            notation = " ".join(parts[:-1])
+            advantage = True
+        elif suffix == "d":
+            notation = " ".join(parts[:-1])
+            advantage = False
+        else:
+            notation = raw
+            advantage = None
+        roll_shadowdark(notation, advantage)
 
 
 def main_menu():
