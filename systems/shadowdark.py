@@ -3,6 +3,7 @@ import re
 from dataclasses import dataclass
 from typing import Optional
 
+from .banner import Banner, build_banner_lines
 from .base import RpgSystem
 from .character import Character
 
@@ -137,10 +138,16 @@ class ShadowdarkSystem(RpgSystem):
     system_slug = "shadowdark"
 
     def run(self, character: Optional[Character] = None) -> None:
-        if character:
-            print(f"\n--- Playing as: {character.name} ---")
+        banner = Banner(build_banner_lines(self.name, character))
+        banner.install()
         print("\nEnter dice notation (e.g. D20, 2D6+1, D20-3) or 'q' to quit.")
         print("Append 'a' for advantage or 'd' for disadvantage (e.g. 2D6+1 a, D20 d).")
+        try:
+            self._roll_loop()
+        finally:
+            banner.uninstall()
+
+    def _roll_loop(self) -> None:
         while True:
             try:
                 raw = input("\nRoll> ").strip()

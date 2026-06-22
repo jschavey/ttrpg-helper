@@ -3,6 +3,7 @@ import re
 from dataclasses import dataclass
 from typing import Optional
 
+from .banner import Banner, build_banner_lines
 from .base import RpgSystem
 from .character import Character
 
@@ -116,22 +117,25 @@ class StarWarsSystem(RpgSystem):
     system_slug = "star_wars"
 
     def run(self, character: Optional[Character] = None) -> None:
-        if character:
-            print(f"\n--- Playing as: {character.name} ---")
+        banner = Banner(build_banner_lines(self.name, character))
+        banner.install()
         print_difficulty_table()
         print("\nEnter dice notation (e.g. 6D, 4D+2) or 'q' to quit.")
-        while True:
-            try:
-                notation = input("\nRoll> ").strip()
-            except (EOFError, KeyboardInterrupt):
-                print()
-                break
-            if notation.lower() in ("q", "quit", "exit"):
-                break
-            if not notation:
-                continue
-            result = roll(notation)
-            if result is None:
-                print(f"Invalid notation: '{notation}'. Use format like '6D' or '4D+2'.")
-            else:
-                print_result(notation, result)
+        try:
+            while True:
+                try:
+                    notation = input("\nRoll> ").strip()
+                except (EOFError, KeyboardInterrupt):
+                    print()
+                    break
+                if notation.lower() in ("q", "quit", "exit"):
+                    break
+                if not notation:
+                    continue
+                result = roll(notation)
+                if result is None:
+                    print(f"Invalid notation: '{notation}'. Use format like '6D' or '4D+2'.")
+                else:
+                    print_result(notation, result)
+        finally:
+            banner.uninstall()
