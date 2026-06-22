@@ -3,6 +3,9 @@ import re
 from dataclasses import dataclass
 from typing import Optional
 
+from prompt_toolkit import prompt as pt_prompt
+from prompt_toolkit.completion import Completer, Completion
+
 from .banner import Banner, build_banner_lines
 from .base import RpgSystem
 from .character import Character
@@ -37,6 +40,21 @@ CHECKS: dict[str, tuple[str, str]] = {
     "intimidation": ("cha", "Intimidation"), "intim": ("cha", "Intimidation"),
 }
 
+# Spellcasting stat per class (lowercase class name → stat key).
+_SPELLCASTING_STAT: dict[str, str] = {
+    "priest": "wis",
+    "wizard": "int",
+}
+
+# Talent text that grants +1 to spellcasting, keyed by class.
+_SPELLCASTING_TALENT: dict[str, str] = {
+    "priest": "+1 to priest spellcasting checks",
+}
+
+
+# ---------------------------------------------------------------------------
+# Check
+# ---------------------------------------------------------------------------
 
 @dataclass
 class CheckResult:
@@ -45,7 +63,7 @@ class CheckResult:
     stat_value: int
     die_roll: int
     modifiers: list[tuple[str, int]]
-    advantage: Optional[bool] = None   # True=adv, False=dis, None=normal
+    advantage: Optional[bool] = None
     alt_die_roll: Optional[int] = None
 
     @property
@@ -91,15 +109,15 @@ def check(check_name: str, character: "Character", advantage: Optional[bool] = N
     )
 
 
-def _print_check_roll(label: str, die_roll: int, modifiers: list[tuple[str, int]], col: int) -> None:
+def _print_d20_roll_block(label: str, die_roll: int, modifiers: list[tuple[str, int]], col: int) -> None:
     print(f"  {label}")
     print(f"    {'D20 roll':<{col}}  {die_roll}")
     for src, value in modifiers:
         sign = f"+{value}" if value >= 0 else str(value)
         print(f"    {src:<{col}}  {sign}")
-    total = die_roll + sum(v for _, v in modifiers)
+    subtotal = die_roll + sum(v for _, v in modifiers)
     print(f"    {'─' * col}  ─────")
-    print(f"    {'Subtotal':<{col}}  {total}")
+    print(f"    {'Subtotal':<{col}}  {subtotal}")
 
 
 def print_check_result(result: CheckResult) -> None:
@@ -116,11 +134,139 @@ def print_check_result(result: CheckResult) -> None:
         print(f"  {'─' * col}  ─────")
         print(f"  {'Total':<{col}}  {result.total}")
     else:
-        _print_check_roll("[Roll 1]", result.die_roll, result.modifiers, col)
-        _print_check_roll("[Roll 2]", result.alt_die_roll or 0, result.modifiers, col)
+        _print_d20_roll_block("[Roll 1]", result.die_roll, result.modifiers, col)
+        _print_d20_roll_block("[Roll 2]", result.alt_die_roll or 0, result.modifiers, col)
         rule = "higher" if result.advantage else "lower"
         print(f"\n  Taking {rule}: {result.chosen_total}")
 
+
+# ---------------------------------------------------------------------------
+# Cast
+# ---------------------------------------------------------------------------
+
+@dataclass
+class CastResult:
+    spell_name: str
+    die_roll: int
+    modifiers: list[tuple[str, int]]
+    advantage: Optional[bool]
+    alt_die_roll: Optional[int]
+
+    @property
+    def total(self) -> int:
+        return self.die_roll + sum(v for _, v in self.modifiers)
+
+    @property
+    def alt_total(self) -> Optional[int]:
+        if self.alt_die_roll is None:
+            return None
+        return self.alt_die_roll + sum(v for _, v in self.modifiers)
+
+    @property
+    def chosen_total(self) -> int:
+        if self.advantage is None or self.alt_total is None:
+            return self.total
+        if self.advantage:
+            return max(self.total, self.alt_total)
+        return min(self.total, self.alt_total)
+
+
+def get_character_spells(character: "Character") -> list[str]:
+    """Return all spell names from the character sheet, across all tiers."""
+    spells_data = character.data.get("spells", {})
+    spells: list[str] = []
+    for tier_spells in spells_data.values():
+        if isinstance(tier_spells, list):
+            spells.extend(str(s) for s in tier_spells)
+    return spells
+
+
+def cast(
+    spell_name: str,
+    character: "Character",
+    situational: int = 0,
+    advantage: Optional[bool] = None,
+) -> CastResult:
+    """Roll a spellcasting check. Applies class stat mod, talent bonuses, and situational modifier."""
+    cls = character.data.get("meta", {}).get("class", "").lower()
+    modifiers: list[tuple[str, int]] = []
+
+    stat_key = _SPELLCASTING_STAT.get(cls)
+    if stat_key:
+        stat_value = character.data.get("stats", {}).get(stat_key, 10)
+        stat_mod = (stat_value - 10) // 2
+        modifiers.append((f"{stat_key.upper()} {stat_value:+d}", stat_mod))
+
+        talent_text = _SPELLCASTING_TALENT.get(cls)
+        if talent_text:
+            talents: list[str] = character.data.get("talents", [])
+            bonus = sum(1 for t in talents if talent_text in t.lower())
+            if bonus:
+                modifiers.append(("Talent bonus", bonus))
+
+    if situational:
+        label = f"Situational {situational:+d}"
+        modifiers.append((label, situational))
+
+    return CastResult(
+        spell_name=spell_name,
+        die_roll=random.randint(1, 20),
+        modifiers=modifiers,
+        advantage=advantage,
+        alt_die_roll=random.randint(1, 20) if advantage is not None else None,
+    )
+
+
+def print_cast_result(result: CastResult) -> None:
+    adv_label = " (advantage)" if result.advantage is True else " (disadvantage)" if result.advantage is False else ""
+    print(f"\nCast: {result.spell_name}{adv_label}")
+    col = 20
+    if result.advantage is None:
+        print(f"  {'Source':<{col}}  Value")
+        print(f"  {'-' * col}  -----")
+        print(f"  {'D20 roll':<{col}}  {result.die_roll}")
+        for label, value in result.modifiers:
+            sign = f"+{value}" if value >= 0 else str(value)
+            print(f"  {label:<{col}}  {sign}")
+        print(f"  {'─' * col}  ─────")
+        print(f"  {'Total':<{col}}  {result.total}")
+    else:
+        _print_d20_roll_block("[Roll 1]", result.die_roll, result.modifiers, col)
+        _print_d20_roll_block("[Roll 2]", result.alt_die_roll or 0, result.modifiers, col)
+        rule = "higher" if result.advantage else "lower"
+        print(f"\n  Taking {rule}: {result.chosen_total}")
+
+
+# ---------------------------------------------------------------------------
+# Autocomplete
+# ---------------------------------------------------------------------------
+
+class _SpellCompleter(Completer):
+    """Completes spell names after the 'cast' keyword."""
+
+    def __init__(self, spells: list[str]) -> None:
+        self.spells = spells
+
+    def get_completions(self, document, complete_event):
+        text = document.text_before_cursor
+        if not re.match(r'^cast\s+', text, re.IGNORECASE):
+            return
+        typed = text[text.index(" ") + 1:]
+        for spell in self.spells:
+            if spell.lower().startswith(typed.lower()):
+                yield Completion(spell, start_position=-len(typed))
+
+
+def _read_line(prompt_str: str, completer: Optional[_SpellCompleter]) -> str:
+    """Read a line using prompt_toolkit when a completer is available, else plain input."""
+    if completer is not None:
+        return pt_prompt(prompt_str, completer=completer)
+    return input(prompt_str)
+
+
+# ---------------------------------------------------------------------------
+# Dice roll
+# ---------------------------------------------------------------------------
 
 @dataclass
 class ShadowdarkRollResult:
@@ -128,7 +274,6 @@ class ShadowdarkRollResult:
     modifier: int
     rolls: list[int]              # signed individual roll values
     advantage: Optional[bool]     # True=adv, False=dis, None=normal
-    # when advantage/disadvantage, both sub-results are stored
     alt_rolls: Optional[list[int]] = None
 
     @property
@@ -247,6 +392,27 @@ def print_result(notation: str, result: ShadowdarkRollResult) -> None:
         print(f"\n  Taking {rule}: {result.chosen_total}")
 
 
+# ---------------------------------------------------------------------------
+# System
+# ---------------------------------------------------------------------------
+
+def _parse_cast_args(parts: list[str]) -> tuple[str, int, Optional[bool]]:
+    """Parse tokens after 'cast': returns (spell_name, situational, advantage)."""
+    advantage: Optional[bool] = None
+    situational = 0
+
+    if parts and parts[-1].lower() in ("a", "d"):
+        advantage = parts[-1].lower() == "a"
+        parts = parts[:-1]
+
+    if parts and re.fullmatch(r'[+-]\d+', parts[-1]):
+        situational = int(parts[-1])
+        parts = parts[:-1]
+
+    spell_name = " ".join(parts)
+    return spell_name, situational, advantage
+
+
 class ShadowdarkSystem(RpgSystem):
     name = "Shadowdark"
     system_slug = "shadowdark"
@@ -256,16 +422,22 @@ class ShadowdarkSystem(RpgSystem):
         banner.install()
         print("\nEnter dice notation (e.g. D20, 2D6+1, D20-3) or 'q' to quit.")
         print("Append 'a' for advantage or 'd' for disadvantage (e.g. 2D6+1 a, D20 d).")
-        prompt = "\nWhat do you do Next?> " if character else "\nRoll> "
+        prompt_str = "\nWhat do you do Next?> " if character else "\nRoll> "
+        completer = _SpellCompleter(get_character_spells(character)) if character else None
         try:
-            self._roll_loop(prompt, character)
+            self._roll_loop(prompt_str, character, completer)
         finally:
             banner.uninstall()
 
-    def _roll_loop(self, prompt: str, character: Optional[Character]) -> None:
+    def _roll_loop(
+        self,
+        prompt_str: str,
+        character: Optional[Character],
+        completer: Optional[_SpellCompleter],
+    ) -> None:
         while True:
             try:
-                raw = input(prompt).strip()
+                raw = _read_line(prompt_str, completer).strip()
             except (EOFError, KeyboardInterrupt):
                 print()
                 break
@@ -277,6 +449,7 @@ class ShadowdarkSystem(RpgSystem):
             parts = raw.split()
             cmd = parts[0].lower()
 
+            # --- check ---
             if cmd == "check":
                 if character is None:
                     print("No character loaded — check requires a character sheet.")
@@ -301,6 +474,20 @@ class ShadowdarkSystem(RpgSystem):
                     print_check_result(result_c)
                 continue
 
+            # --- cast ---
+            if cmd == "cast":
+                if character is None:
+                    print("No character loaded — cast requires a character sheet.")
+                    continue
+                spell_name, situational, cast_advantage = _parse_cast_args(parts[1:])
+                if not spell_name:
+                    print("Usage: cast <spell> [+N|-N] [a|d]  (e.g. cast Cure Wounds +1 a)")
+                    continue
+                result_cast = cast(spell_name, character, situational, cast_advantage)
+                print_cast_result(result_cast)
+                continue
+
+            # --- roll (dice notation) ---
             if cmd == "roll" and len(parts) > 1:
                 parts = parts[1:]
             suffix = parts[-1].lower() if len(parts) > 1 else ""

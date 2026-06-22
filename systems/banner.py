@@ -23,7 +23,7 @@ def _stat_mod(val: int) -> str:
     return f"+{mod}" if mod >= 0 else str(mod)
 
 
-COMMANDS = ["roll", "check"]
+COMMANDS = ["roll", "check", "cast"]
 
 
 def build_banner_lines(system_name: str, character: Optional["Character"]) -> list[str]:
