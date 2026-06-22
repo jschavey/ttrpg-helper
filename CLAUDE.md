@@ -2,10 +2,20 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Environment
+
+This project uses a virtualenv at `.venv/`. Always use its binaries:
+
+```bash
+.venv/bin/python roll.py
+.venv/bin/pytest
+.venv/bin/pyright
+```
+
 ## Running
 
 ```bash
-python roll.py
+.venv/bin/python roll.py
 ```
 
 Launches an interactive menu to choose a system, then a character, then prompts for dice notation in a loop. Enter `q` to quit at any prompt.
@@ -20,11 +30,11 @@ Multi-system RPG dice roller with character support. Currently implemented:
 ## Testing
 
 ```bash
-pytest                              # run all tests
-pytest tests/test_shadowdark.py    # run a single test file
+.venv/bin/pytest                              # run all tests
+.venv/bin/pytest tests/test_shadowdark.py    # run a single test file
 ```
 
-Type checking: `pyright`
+Type checking: `.venv/bin/pyright`
 
 ## Code structure
 

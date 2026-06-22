@@ -8,6 +8,120 @@ from .base import RpgSystem
 from .character import Character
 
 
+# Maps input aliases to (stat_key, display_name).
+# Stat keys match character YAML stats section.
+CHECKS: dict[str, tuple[str, str]] = {
+    # direct stat names
+    "str": ("str", "Strength"),       "strength": ("str", "Strength"),
+    "dex": ("dex", "Dexterity"),      "dexterity": ("dex", "Dexterity"),
+    "con": ("con", "Constitution"),   "constitution": ("con", "Constitution"),
+    "int": ("int", "Intelligence"),   "intelligence": ("int", "Intelligence"),
+    "wis": ("wis", "Wisdom"),         "wisdom": ("wis", "Wisdom"),
+    "cha": ("cha", "Charisma"),       "charisma": ("cha", "Charisma"),
+    # common named checks → underlying stat
+    "perception": ("wis", "Perception"),   "perc": ("wis", "Perception"),
+    "insight": ("wis", "Insight"),         "ins": ("wis", "Insight"),
+    "medicine": ("wis", "Medicine"),       "med": ("wis", "Medicine"),
+    "survival": ("wis", "Survival"),       "surv": ("wis", "Survival"),
+    "animal handling": ("wis", "Animal Handling"), "ani": ("wis", "Animal Handling"),
+    "stealth": ("dex", "Stealth"),         "stl": ("dex", "Stealth"),
+    "acrobatics": ("dex", "Acrobatics"),   "acr": ("dex", "Acrobatics"),
+    "athletics": ("str", "Athletics"),     "ath": ("str", "Athletics"),
+    "arcana": ("int", "Arcana"),           "arc": ("int", "Arcana"),
+    "history": ("int", "History"),         "hist": ("int", "History"),
+    "investigation": ("int", "Investigation"), "inv": ("int", "Investigation"),
+    "nature": ("int", "Nature"),           "nat": ("int", "Nature"),
+    "religion": ("int", "Religion"),       "rel": ("int", "Religion"),
+    "persuasion": ("cha", "Persuasion"),   "pers": ("cha", "Persuasion"),
+    "deception": ("cha", "Deception"),     "dec": ("cha", "Deception"),
+    "intimidation": ("cha", "Intimidation"), "intim": ("cha", "Intimidation"),
+}
+
+
+@dataclass
+class CheckResult:
+    check_name: str
+    stat_key: str
+    stat_value: int
+    die_roll: int
+    modifiers: list[tuple[str, int]]
+    advantage: Optional[bool] = None   # True=adv, False=dis, None=normal
+    alt_die_roll: Optional[int] = None
+
+    @property
+    def total(self) -> int:
+        return self.die_roll + sum(v for _, v in self.modifiers)
+
+    @property
+    def alt_total(self) -> Optional[int]:
+        if self.alt_die_roll is None:
+            return None
+        return self.alt_die_roll + sum(v for _, v in self.modifiers)
+
+    @property
+    def chosen_total(self) -> int:
+        if self.advantage is None or self.alt_total is None:
+            return self.total
+        if self.advantage:
+            return max(self.total, self.alt_total)
+        return min(self.total, self.alt_total)
+
+
+def check(check_name: str, character: "Character", advantage: Optional[bool] = None) -> Optional[CheckResult]:
+    """Roll a D20 ability check. Returns None if check_name is unrecognised."""
+    entry = CHECKS.get(check_name.lower())
+    if entry is None:
+        return None
+    stat_key, display_name = entry
+    stat_value = character.data.get("stats", {}).get(stat_key)
+    if stat_value is None:
+        return None
+    stat_mod = (stat_value - 10) // 2
+    modifiers: list[tuple[str, int]] = [
+        (f"{stat_key.upper()} {stat_value:+d}", stat_mod),
+    ]
+    return CheckResult(
+        check_name=display_name,
+        stat_key=stat_key,
+        stat_value=stat_value,
+        die_roll=random.randint(1, 20),
+        modifiers=modifiers,
+        advantage=advantage,
+        alt_die_roll=random.randint(1, 20) if advantage is not None else None,
+    )
+
+
+def _print_check_roll(label: str, die_roll: int, modifiers: list[tuple[str, int]], col: int) -> None:
+    print(f"  {label}")
+    print(f"    {'D20 roll':<{col}}  {die_roll}")
+    for src, value in modifiers:
+        sign = f"+{value}" if value >= 0 else str(value)
+        print(f"    {src:<{col}}  {sign}")
+    total = die_roll + sum(v for _, v in modifiers)
+    print(f"    {'─' * col}  ─────")
+    print(f"    {'Subtotal':<{col}}  {total}")
+
+
+def print_check_result(result: CheckResult) -> None:
+    adv_label = " (advantage)" if result.advantage is True else " (disadvantage)" if result.advantage is False else ""
+    print(f"\n{result.check_name} Check ({result.stat_key.upper()}){adv_label}")
+    col = 18
+    if result.advantage is None:
+        print(f"  {'Source':<{col}}  Value")
+        print(f"  {'-' * col}  -----")
+        print(f"  {'D20 roll':<{col}}  {result.die_roll}")
+        for label, value in result.modifiers:
+            sign = f"+{value}" if value >= 0 else str(value)
+            print(f"  {label:<{col}}  {sign}")
+        print(f"  {'─' * col}  ─────")
+        print(f"  {'Total':<{col}}  {result.total}")
+    else:
+        _print_check_roll("[Roll 1]", result.die_roll, result.modifiers, col)
+        _print_check_roll("[Roll 2]", result.alt_die_roll or 0, result.modifiers, col)
+        rule = "higher" if result.advantage else "lower"
+        print(f"\n  Taking {rule}: {result.chosen_total}")
+
+
 @dataclass
 class ShadowdarkRollResult:
     pools: list[tuple[int, int]]  # (count, sides); negative count = subtract
@@ -144,11 +258,11 @@ class ShadowdarkSystem(RpgSystem):
         print("Append 'a' for advantage or 'd' for disadvantage (e.g. 2D6+1 a, D20 d).")
         prompt = "\nWhat do you do Next?> " if character else "\nRoll> "
         try:
-            self._roll_loop(prompt)
+            self._roll_loop(prompt, character)
         finally:
             banner.uninstall()
 
-    def _roll_loop(self, prompt: str) -> None:
+    def _roll_loop(self, prompt: str, character: Optional[Character]) -> None:
         while True:
             try:
                 raw = input(prompt).strip()
@@ -161,7 +275,33 @@ class ShadowdarkSystem(RpgSystem):
                 continue
 
             parts = raw.split()
-            if parts[0].lower() == "roll" and len(parts) > 1:
+            cmd = parts[0].lower()
+
+            if cmd == "check":
+                if character is None:
+                    print("No character loaded — check requires a character sheet.")
+                    continue
+                check_parts = parts[1:]
+                if not check_parts:
+                    print("Usage: check <name> [a|d]  (e.g. check per, check wis a)")
+                    continue
+                check_advantage: Optional[bool] = None
+                if check_parts[-1].lower() == "a":
+                    check_advantage, check_parts = True, check_parts[:-1]
+                elif check_parts[-1].lower() == "d":
+                    check_advantage, check_parts = False, check_parts[:-1]
+                check_name = " ".join(check_parts).lower()
+                if not check_name:
+                    print("Usage: check <name> [a|d]  (e.g. check per, check wis a)")
+                    continue
+                result_c = check(check_name, character, check_advantage)
+                if result_c is None:
+                    print(f"Unknown check: '{check_name}'. Try a stat (str, wis…) or name (perception, stealth…).")
+                else:
+                    print_check_result(result_c)
+                continue
+
+            if cmd == "roll" and len(parts) > 1:
                 parts = parts[1:]
             suffix = parts[-1].lower() if len(parts) > 1 else ""
             if suffix == "a":
