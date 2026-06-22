@@ -121,17 +121,23 @@ class StarWarsSystem(RpgSystem):
         banner.install()
         print_difficulty_table()
         print("\nEnter dice notation (e.g. 6D, 4D+2) or 'q' to quit.")
+        prompt = "\nWhat do you do Next?> " if character else "\nRoll> "
         try:
             while True:
                 try:
-                    notation = input("\nRoll> ").strip()
+                    raw = input(prompt).strip()
                 except (EOFError, KeyboardInterrupt):
                     print()
                     break
-                if notation.lower() in ("q", "quit", "exit"):
+                if raw.lower() in ("q", "quit", "exit"):
                     break
-                if not notation:
+                if not raw:
                     continue
+                parts = raw.split(None, 1)
+                if parts[0].lower() == "roll" and len(parts) > 1:
+                    notation = parts[1]
+                else:
+                    notation = raw
                 result = roll(notation)
                 if result is None:
                     print(f"Invalid notation: '{notation}'. Use format like '6D' or '4D+2'.")

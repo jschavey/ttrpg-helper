@@ -142,15 +142,16 @@ class ShadowdarkSystem(RpgSystem):
         banner.install()
         print("\nEnter dice notation (e.g. D20, 2D6+1, D20-3) or 'q' to quit.")
         print("Append 'a' for advantage or 'd' for disadvantage (e.g. 2D6+1 a, D20 d).")
+        prompt = "\nWhat do you do Next?> " if character else "\nRoll> "
         try:
-            self._roll_loop()
+            self._roll_loop(prompt)
         finally:
             banner.uninstall()
 
-    def _roll_loop(self) -> None:
+    def _roll_loop(self, prompt: str) -> None:
         while True:
             try:
-                raw = input("\nRoll> ").strip()
+                raw = input(prompt).strip()
             except (EOFError, KeyboardInterrupt):
                 print()
                 break
@@ -160,13 +161,15 @@ class ShadowdarkSystem(RpgSystem):
                 continue
 
             parts = raw.split()
+            if parts[0].lower() == "roll" and len(parts) > 1:
+                parts = parts[1:]
             suffix = parts[-1].lower() if len(parts) > 1 else ""
             if suffix == "a":
                 notation, advantage = " ".join(parts[:-1]), True
             elif suffix == "d":
                 notation, advantage = " ".join(parts[:-1]), False
             else:
-                notation, advantage = raw, None
+                notation, advantage = " ".join(parts), None
 
             result = roll(notation, advantage)
             if result is None:

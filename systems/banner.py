@@ -23,6 +23,9 @@ def _stat_mod(val: int) -> str:
     return f"+{mod}" if mod >= 0 else str(mod)
 
 
+COMMANDS = ["roll"]
+
+
 def build_banner_lines(system_name: str, character: Optional["Character"]) -> list[str]:
     w, _ = _term_size()
     inner = w - 2  # space between box edges
@@ -64,6 +67,8 @@ def build_banner_lines(system_name: str, character: Optional["Character"]) -> li
 
         if combat_parts or stat_parts:
             rows.append(" " + "  ".join(combat_parts + stat_parts))
+
+        rows.append(" Commands: " + "  ".join(COMMANDS))
 
     top = "┌" + "─" * inner + "┐"
     bot = "└" + "─" * inner + "┘"
