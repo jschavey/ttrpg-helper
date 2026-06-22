@@ -1,0 +1,7 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.pyright]
+pythonVersion = "3.14"
+venvPath = "."
+include = ["systems", "tests", "roll.py"]
