@@ -1,7 +1,14 @@
+[project]
+name = "star-wars-roller"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["pyyaml"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
 [tool.pyright]
 pythonVersion = "3.14"
 venvPath = "."
+venv = ".venv"
 include = ["systems", "tests", "roll.py"]

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from .base import RpgSystem
+from .character import Character
 
 
 @dataclass
@@ -133,8 +134,11 @@ def print_result(notation: str, result: ShadowdarkRollResult) -> None:
 
 class ShadowdarkSystem(RpgSystem):
     name = "Shadowdark"
+    system_slug = "shadowdark"
 
-    def run(self) -> None:
+    def run(self, character: Optional[Character] = None) -> None:
+        if character:
+            print(f"\n--- Playing as: {character.name} ---")
         print("\nEnter dice notation (e.g. D20, 2D6+1, D20-3) or 'q' to quit.")
         print("Append 'a' for advantage or 'd' for disadvantage (e.g. 2D6+1 a, D20 d).")
         while True:

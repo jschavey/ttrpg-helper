@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from .base import RpgSystem
+from .character import Character
 
 
 DIFFICULTY_TABLE = [
@@ -112,8 +113,11 @@ def print_result(notation: str, result: StarWarsRollResult) -> None:
 
 class StarWarsSystem(RpgSystem):
     name = "Star Wars D6"
+    system_slug = "star_wars"
 
-    def run(self) -> None:
+    def run(self, character: Optional[Character] = None) -> None:
+        if character:
+            print(f"\n--- Playing as: {character.name} ---")
         print_difficulty_table()
         print("\nEnter dice notation (e.g. 6D, 4D+2) or 'q' to quit.")
         while True:

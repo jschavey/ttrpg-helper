@@ -1,0 +1,81 @@
+meta:
+  system: "shadowdark"
+  name: "Urist the Undying"
+  gender: "Male"
+  ancestry: "Dwarf"
+  class: "Priest"
+  level: 3
+  alignment: "Neutral"
+  xp: 3
+
+combat:
+  hp: 22
+  ac_normal: 11
+  ac_shield: 13
+
+stats:
+  str: 8
+  dex: 9
+  con: 13
+  int: 6
+  wis: 15
+  cha: 8
+
+deity:
+  name: "Ord the Unbending, the Wise, the Secret Keeper"
+  domains: ["Magic", "Knowledge", "Secrets", "Equilibrium"]
+  alignment: "Celestial"
+
+talents:
+  - "+1 to priest spellcasting checks"
+  - "+1 to priest spellcasting checks"
+
+spells:
+  tier_1:
+    - "Cure Wounds"
+    - "Turn Undead"
+    - "Protection from Evil"
+  tier_2:
+    - "Augury"
+
+items:
+  - "35 gold"
+  - "Shield (+2 AC)"
+  - "Mace"
+  - "Leather Armor"
+  - "Grappling Hook"
+  - "Rope (60')"
+  - "Iron Spikes x10"
+  - "Torch x2"
+  - "Duck Pitch"
+  - "Flint and Steel"
+  - "Rations x3"
+
+# Phase 3 LLM Context: Rich, unstructured text blocks for the narrator to digest
+personality_and_hooks:
+  profile: |
+    Urist moves through the world as a man shaped by signs and portents. He reads the currents of what is meant and positions himself accordingly. This can look like calm, detachment, or arrogance.
+    He carries an invisible but load-bearing humiliation from being the shortest dwarf in a mining clan that measured worth in inches. He found Ord late during a period of exile.
+    He secretly distrusts anyone shorter than himself (goblins, halflings, gnomes) due to a deep-seated reflex of old self-loathing, though the party's goblin has proven useful, causing an internal discrepancy he calls "luck."
+  verbal_palette:
+    - "Ord does not deal in coincidence."
+    - "I misread the signs. It happens."
+    - "There is a shape to this. I can almost see it."
+    - "I won't pretend I knew that would happen. But I'm not surprised."
+    - "The omen pointed here. I trust the omen."
+    - "Some paths close so others open. This one closed."
+    - "Ask me again when we're out of here."
+    - "I've made worse guesses."
+
+campaign_context: |
+  -- CURRENT SITUATION --
+  The door ahead is not locked. It is waiting. There is a difference.
+  The party is currently following Urist's lead inside a mysterious shrine—this is his scene.
+  
+  -- RECENT CHRONICLE --
+  - Arrived by ship; the vessel wrecked on approach to the island. Urist had prior knowledge via a dream of a black shoreline, a door that shouldn't exist, and a key turning at the bottom of the sea. Took the wreck as confirmation.
+  - Encountered and investigated a Cthulhu shrine.
+  - The party's goblin accidentally triggered the opening mechanism, though Urist claimed credit.
+  - Inside, Urist identified a fossil-embedded trap and deliberately-accidentally disarmed it by pressing the fossils, successfully clearing the passage.
+  - Urist cast Augury on the westward (left) passage, received a bad omen, and advised the party against it.
+  - The party is now approaching the door at the end of the straight-ahead passage.t
