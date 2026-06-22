@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import random
-import sys
 import re
 
 
@@ -13,14 +12,17 @@ def parse_notation(notation):
     match = re.fullmatch(r'(\d+)D(?:\+(\d+))?', notation)
     if not match:
         print(f"Invalid notation: '{notation}'. Use format like '6D' or '4D+2'.")
-        sys.exit(1)
+        return None
     num_dice = int(match.group(1))
     bonus = int(match.group(2)) if match.group(2) else 0
     return num_dice, bonus
 
 
 def roll_pool(notation):
-    num_dice, bonus = parse_notation(notation)
+    result = parse_notation(notation)
+    if result is None:
+        return
+    num_dice, bonus = result
 
     print(f"\nRolling {notation}:")
     print(f"  {'Special die' if num_dice >= 1 else ''}")
@@ -82,13 +84,46 @@ def print_difficulty_table():
     print("  +-----------------+-------+")
 
 
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python roll.py <notation> [notation ...]")
-        print("Examples: python roll.py 6D    python roll.py 4D+2")
-        sys.exit(1)
-
+def run_star_wars():
     print_difficulty_table()
+    print("\nEnter dice notation (e.g. 6D, 4D+2) or 'q' to quit.")
+    while True:
+        try:
+            notation = input("\nRoll> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if notation.lower() in ("q", "quit", "exit"):
+            break
+        if notation:
+            roll_pool(notation)
 
-    for arg in sys.argv[1:]:
-        roll_pool(arg)
+
+def run_shadowdark():
+    print("\nShadowdark system not yet implemented.")
+    input("Press Enter to return to menu...")
+
+
+def main_menu():
+    while True:
+        print("\n=== Dice Roller ===")
+        print("1. Star Wars D6")
+        print("2. Shadowdark")
+        print("q. Quit")
+        try:
+            choice = input("\nChoose a system: ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if choice == "1":
+            run_star_wars()
+        elif choice == "2":
+            run_shadowdark()
+        elif choice in ("q", "quit", "exit"):
+            break
+        else:
+            print("Invalid choice. Enter 1, 2, or q.")
+
+
+if __name__ == "__main__":
+    main_menu()
