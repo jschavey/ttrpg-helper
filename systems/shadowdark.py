@@ -241,23 +241,27 @@ def print_cast_result(result: CastResult) -> None:
 # Autocomplete
 # ---------------------------------------------------------------------------
 
-class _SpellCompleter(Completer):
-    """Completes spell names after the 'cast' keyword."""
+class _CommandCompleter(Completer):
+    """Completes arguments for 'cast' (spell names) and 'check' (stat/check names)."""
 
     def __init__(self, spells: list[str]) -> None:
         self.spells = spells
+        self._check_options = sorted(CHECKS.keys())
 
     def get_completions(self, document, complete_event):
         text = document.text_before_cursor
-        if not re.match(r'^cast\s+', text, re.IGNORECASE):
+        m = re.match(r'^(cast|check)\s+', text, re.IGNORECASE)
+        if not m:
             return
-        typed = text[text.index(" ") + 1:]
-        for spell in self.spells:
-            if spell.lower().startswith(typed.lower()):
-                yield Completion(spell, start_position=-len(typed))
+        cmd = m.group(1).lower()
+        typed = text[m.end():]
+        options = self.spells if cmd == "cast" else self._check_options
+        for option in options:
+            if option.lower().startswith(typed.lower()):
+                yield Completion(option, start_position=-len(typed))
 
 
-def _read_line(prompt_str: str, completer: Optional[_SpellCompleter]) -> str:
+def _read_line(prompt_str: str, completer: Optional[_CommandCompleter]) -> str:
     """Read a line using prompt_toolkit when a completer is available, else plain input."""
     if completer is not None:
         return pt_prompt(prompt_str, completer=completer)
@@ -423,7 +427,7 @@ class ShadowdarkSystem(RpgSystem):
         print("\nEnter dice notation (e.g. D20, 2D6+1, D20-3) or 'q' to quit.")
         print("Append 'a' for advantage or 'd' for disadvantage (e.g. 2D6+1 a, D20 d).")
         prompt_str = "\nWhat do you do Next?> " if character else "\nRoll> "
-        completer = _SpellCompleter(get_character_spells(character)) if character else None
+        completer = _CommandCompleter(get_character_spells(character)) if character else None
         try:
             self._roll_loop(prompt_str, character, completer)
         finally:
@@ -433,7 +437,7 @@ class ShadowdarkSystem(RpgSystem):
         self,
         prompt_str: str,
         character: Optional[Character],
-        completer: Optional[_SpellCompleter],
+        completer: Optional[_CommandCompleter],
     ) -> None:
         while True:
             try:
