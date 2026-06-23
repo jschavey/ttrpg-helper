@@ -68,14 +68,25 @@ personality_and_hooks:
     - "I've made worse guesses."
 
 campaign_context: |
-  -- CURRENT SITUATION --
-  The door ahead is not locked. It is waiting. There is a difference.
-  The party is currently following Urist's lead inside a mysterious shrine—this is his scene.
-  
   -- RECENT CHRONICLE --
+  
+  Session 1:
   - Arrived by ship; the vessel wrecked on approach to the island. Urist had prior knowledge via a dream of a black shoreline, a door that shouldn't exist, and a key turning at the bottom of the sea. Took the wreck as confirmation.
   - Encountered and investigated a Cthulhu shrine.
   - The party's goblin accidentally triggered the opening mechanism, though Urist claimed credit.
   - Inside, Urist identified a fossil-embedded trap and deliberately-accidentally disarmed it by pressing the fossils, successfully clearing the passage.
   - Urist cast Augury on the westward (left) passage, received a bad omen, and advised the party against it.
-  - The party is now approaching the door at the end of the straight-ahead passage.t
+  - The party approached the door at the end of the straight-ahead passage.
+
+  Session 2 (Campaign Finale):
+  - **The Sunken Descent:** Entered the forward door and descended a sloping corridor into a chamber of dank green water. Leeches ambushed the party from the pool but were slain without taking damage.
+  - **The Submerged Grate:** The goblin fell into the water, discovering a barred grate and an eastern tunnel. Tu'ru managed to open the grate, but the party chose to bypass it and proceed through a set of double doors.
+  - **The Hall of the Cephalopod Queen:** Ascended the stairs into a dry room characterized by an eerie, simulated underwater atmosphere. Discovered ancient, highly advanced technology beyond known island capabilities, alongside six 12-foot pillar-statues and one 20-foot kneeling statue of a tentacled, Cthulhu-faced female entity.
+  - **The Offering:** A westward door was found. The goblin attempted to place a shell, then a leech, into the statue's hands. Urist spent a Luck Token on an omen check; wisdom revealed that a much greater offering was required.
+  - **The Mutation Alcoves:** Moved up further stairs into a massive chamber (40' x 25') echoing with the sound of lapping water. Found three alcoves flanked by bas-reliefs of humans devolving into cephalopods. The goblin scouted the first alcove's cloudy pool, revealing a transforming, tentacled human native. 
+  - **The Harvest:** Though momentarily gripped by fear, the party slaughtered the mutating entities in all three alcoves. One was beheaded to secure a proper offering for the statue room; another grabbed Tu'ru before the wizard restrained it with a Web spell. The pools contained no loot.
+  - **Scouting the Tunnel:** Returned toward the statue room with the severed head. Backtracked to the swimming tunnel where Urist held a torch while the party swam up the open passage (bypassing the grate), discovering it led outside to an external water source.
+  - **The Mind-Flayer's Ambush:** Retreated to the original western door, which opened into a T-junction corridor. Hearing chewing sounds from the south, the party turned north into a large room filled with ragged furniture. Behind a northeastern curtain, a rhythmic squelching noise ceased as tentacles lashed out.
+  - **The Madness and the Fire:** A full Brain-Eater subjected Urist to a mind-flay effect, driving them into a psychic frenzy to attack the nearest ally, Tu'ru. The wizard caught the creature in a Web spell, and though it released a mental scream, the party was out of range. The wizard successfully cast Fireball, but the creature retaliated, dropping the wizard to 0 HP. Urist attacked Tu'ru once more before snapping out of the madness and retreating toward the fallen wizard.
+  - **The Bitter End:** Urist suffered 12 psychic damage and was paralyzed for several rounds. Six berserkers stormed the room and dragged the party away, placing them into the very mutation alcoves they had previously cleared. 
+  - **Epilogue:** The wizard perished. While the rest of the party died or succumbed to horror, Urist alone survived the agonizing transformation process. True to their moniker, Urist remains "The Undying"—though their ultimate fate on this island remains unwritten as a new campaign begins.
