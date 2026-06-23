@@ -23,7 +23,7 @@ def _stat_mod(val: int) -> str:
     return f"+{mod}" if mod >= 0 else str(mod)
 
 
-COMMANDS = ["roll", "check", "cast"]
+COMMANDS = ["roll", "check", "cast", "hp"]
 
 
 def build_banner_lines(system_name: str, character: Optional["Character"]) -> list[str]:
@@ -59,7 +59,11 @@ def build_banner_lines(system_name: str, character: Optional["Character"]) -> li
 
         combat_parts = []
         if hp is not None:
-            combat_parts.append(f"HP {hp}")
+            session_hp = character.session_hp
+            if session_hp is not None and session_hp != hp:
+                combat_parts.append(f"HP {session_hp}/{hp}")
+            else:
+                combat_parts.append(f"HP {hp}")
         if ac is not None:
             shield_ac = combat.get("ac_shield")
             ac_str = f"{ac}/{shield_ac}" if shield_ac else str(ac)
@@ -92,6 +96,16 @@ class Banner:
         # Restrict scrolling to lines below the banner
         _write(f"\033[{self.height + 1};{h}r")
         _write(f"\033[{self.height + 1};1H")
+        _write("\033[?25h")
+
+    def redraw(self, new_lines: list[str]) -> None:
+        self.lines = new_lines
+        self.height = len(new_lines)
+        _write("\033[?25l")
+        _write("\0337")  # save cursor + attributes (DEC)
+        for i, line in enumerate(new_lines, 1):
+            _write(f"\033[{i};1H\033[2K{line}")
+        _write("\0338")  # restore cursor
         _write("\033[?25h")
 
     def uninstall(self) -> None:

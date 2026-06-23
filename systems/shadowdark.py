@@ -429,7 +429,7 @@ class ShadowdarkSystem(RpgSystem):
         prompt_str = "\nWhat do you do Next?> " if character else "\nRoll> "
         completer = _CommandCompleter(get_character_spells(character)) if character else None
         try:
-            self._roll_loop(prompt_str, character, completer)
+            self._roll_loop(prompt_str, character, completer, banner)
         finally:
             banner.uninstall()
 
@@ -438,6 +438,7 @@ class ShadowdarkSystem(RpgSystem):
         prompt_str: str,
         character: Optional[Character],
         completer: Optional[_CommandCompleter],
+        banner: Optional[Banner] = None,
     ) -> None:
         while True:
             try:
@@ -489,6 +490,29 @@ class ShadowdarkSystem(RpgSystem):
                     continue
                 result_cast = cast(spell_name, character, situational, cast_advantage)
                 print_cast_result(result_cast)
+                continue
+
+            # --- hp ---
+            if cmd == "hp":
+                if character is None:
+                    print("No character loaded — hp requires a character sheet.")
+                    continue
+                if len(parts) < 2 or not re.fullmatch(r'[+\-]\d+|\d+', parts[1]):
+                    print("Usage: hp +N or hp -N  (e.g. hp -5, hp +2)")
+                    continue
+                delta = int(parts[1])
+                max_hp = character.data.get("combat", {}).get("hp", 0)
+                old_hp = character.session_hp if character.session_hp is not None else max_hp
+                new_hp = old_hp + delta
+                character.session_hp = new_hp
+                character.data.setdefault("combat", {})["current_hp"] = new_hp
+                character.save()
+                sign = f"+{delta}" if delta >= 0 else str(delta)
+                print(f"\n  HP {old_hp} → {new_hp}  ({sign})")
+                if new_hp <= 0:
+                    print("  *** CHARACTER IS DOWN (0 HP or below)! ***")
+                if banner is not None:
+                    banner.redraw(build_banner_lines(self.name, character))
                 continue
 
             # --- roll (dice notation) ---
