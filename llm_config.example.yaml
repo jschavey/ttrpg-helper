@@ -1,0 +1,13 @@
+# Copy this file to llm_config.yaml and fill in your values.
+# llm_config.yaml is gitignored so your keys stay local.
+
+# --- Anthropic (Claude) ---
+# provider: "anthropic"
+# model: "claude-haiku-4-5-20251001"
+# api_key_env: "ANTHROPIC_API_KEY"   # optional; defaults to ANTHROPIC_API_KEY
+
+# --- LM Studio (or any OpenAI-compatible endpoint) ---
+provider: "openai_compatible"
+model: "google/gemma-4-26b-a4b-qat"
+base_url: "http://localhost:1234/v1"
+api_key: "your-lm-studio-token-here"
