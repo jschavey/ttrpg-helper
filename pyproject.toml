@@ -2,7 +2,7 @@
 name = "star-wars-roller"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = ["pyyaml"]
+dependencies = ["pyyaml", "anthropic", "openai"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -20,3 +20,6 @@ env/
 
 # VS Code
 .vscode/
+
+# LLM config (may contain API keys)
+llm_config.yaml

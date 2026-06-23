@@ -7,6 +7,7 @@ meta:
   level: 3
   alignment: "Neutral"
   xp: 3
+  status: "finished"
 
 combat:
   hp: 22
