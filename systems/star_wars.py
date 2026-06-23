@@ -123,25 +123,54 @@ class StarWarsSystem(RpgSystem):
         print("\nEnter dice notation (e.g. 6D, 4D+2) or 'q' to quit.")
         prompt = "\nWhat do you do Next?> " if character else "\nRoll> "
         try:
-            while True:
-                try:
-                    raw = input(prompt).strip()
-                except (EOFError, KeyboardInterrupt):
-                    print()
-                    break
-                if raw.lower() in ("q", "quit", "exit"):
-                    break
-                if not raw:
-                    continue
-                parts = raw.split(None, 1)
-                if parts[0].lower() == "roll" and len(parts) > 1:
-                    notation = parts[1]
-                else:
-                    notation = raw
-                result = roll(notation)
-                if result is None:
-                    print(f"Invalid notation: '{notation}'. Use format like '6D' or '4D+2'.")
-                else:
-                    print_result(notation, result)
+            self._roll_loop(prompt, character, banner)
         finally:
             banner.uninstall()
+
+    def _roll_loop(self, prompt: str, character: Optional[Character], banner: Banner) -> None:
+        while True:
+            try:
+                raw = input(prompt).strip()
+            except (EOFError, KeyboardInterrupt):
+                print()
+                break
+            if raw.lower() in ("q", "quit", "exit"):
+                break
+            if not raw:
+                continue
+
+            parts = raw.split()
+            cmd = parts[0].lower()
+
+            # --- hp ---
+            if cmd == "hp":
+                if character is None:
+                    print("No character loaded — hp requires a character sheet.")
+                    continue
+                if len(parts) < 2 or not re.fullmatch(r'[+\-]\d+|\d+', parts[1]):
+                    print("Usage: hp +N or hp -N  (e.g. hp -5, hp +2)")
+                    continue
+                delta = int(parts[1])
+                max_hp = character.data.get("combat", {}).get("hp", 0)
+                old_hp = character.session_hp if character.session_hp is not None else max_hp
+                new_hp = old_hp + delta
+                character.session_hp = new_hp
+                character.data.setdefault("combat", {})["current_hp"] = new_hp
+                character.save()
+                sign = f"+{delta}" if delta >= 0 else str(delta)
+                print(f"\n  HP {old_hp} → {new_hp}  ({sign})")
+                if new_hp <= 0:
+                    print("  *** CHARACTER IS DOWN (0 HP or below)! ***")
+                banner.redraw(build_banner_lines(self.name, character))
+                continue
+
+            # --- roll ---
+            if cmd == "roll" and len(parts) > 1:
+                notation = " ".join(parts[1:])
+            else:
+                notation = raw
+            result = roll(notation)
+            if result is None:
+                print(f"Invalid notation: '{notation}'. Use format like '6D' or '4D+2'.")
+            else:
+                print_result(notation, result)
