@@ -71,6 +71,26 @@ meta_game:
   character_points: 5
   wounds: "Healthy"
 
+campaign_context: |
+  -- SETTING --
+
+  It is a Time of Rebellion! Darth Vader has been slain, the second Death Star has
+  been destroyed, the Battle of Endor has been won, the flames of resistance are
+  leaping from system to system, a New Republic has arisen from the ashes of the Old,
+  and the Jedi have returned!
+
+  But even amidst this time of hope, the Empire is not yet defeated and the Dark Side
+  has grown only stronger. Though the Emperor is dead, countless worlds remain in the
+  grip of his tyranny and his Inquisitors and Dark Side acolytes roam the galaxy
+  unchecked. Evil is everywhere.
+
+  In the distant Outer Rim on the planet of VOLLON, the mysterious warlord LORD STRATUS
+  leads an uprising against the evil Empire, even as a Republic Taskforce has been sent
+  to engage the Imperial fleet. As the battle rages across and above the planet, a Jedi
+  Knight has been dispatched by the new Jedi Council along with a team of Specialists
+  from the New Republic on a secret mission to the surface — to learn the truth behind
+  the mysterious LORD STRATUS and to free VOLLON from the grip of tyranny and darkness.
+
 # ==============================================================================
 # SESSION NOTES
 # Append ongoing campaign entries below.
@@ -78,8 +98,12 @@ meta_game:
 session_notes: |
   Session 1:
   - Primary goal is to find Stratus
-  - Make contact with Logan Hett (rebel conspirator) and establish cover identity in the local sector hub.
-  - Arrived, contact is missing
+  - Our lead: Make contact with Logan Hett (rebel conspirator) and establish cover identity in the local sector hub.
+  - We enter a Taylander Shuttle and begin descent
+  - We fought our way through space to the atmosphere, barely noticing a high level sith with escort exiting the scene as we arrive to the atmosphere
+  - Technical Read Out of the mysterious Inquisitiorious “Sith Stalker” interceptor craft encountered in the orbital battle above Vollon 
+  - the sith is being escorted by TIE-D Droid Fighters 
+  - Arrived at Logan's hangar, contact is missing
   - Twi'lek woman confirms missing and join us N'tlla
   - We grab a speeder and head to where we lost contact with Logan, Paul Jessick, capital city
   - Largest city built into massive canyon
