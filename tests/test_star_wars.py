@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from systems.star_wars import parse_notation, roll, StarWarsRollResult
+from systems.star_wars_d6 import parse_notation, roll, RollResult as StarWarsRollResult
 
 
 class TestParseNotation:
@@ -38,27 +38,27 @@ class TestRoll:
         assert roll("bad") is None
 
     def test_total_includes_bonus(self):
-        with patch("systems.star_wars.random.randint", return_value=3):
+        with patch("systems.star_wars_d6.random.randint", return_value=3):
             result = roll("2D+5")
         # rolls: [3, 3], bonus: 5
         assert result.total == 11
 
     def test_no_complication_no_explode_on_normal_roll(self):
-        with patch("systems.star_wars.random.randint", return_value=3):
+        with patch("systems.star_wars_d6.random.randint", return_value=3):
             result = roll("3D")
         assert not result.complication
         assert not result.exploded
 
     def test_complication_on_wild_die_1(self):
         # First call returns 1 (wild die), rest return 3
-        with patch("systems.star_wars.random.randint", side_effect=[1, 3, 3]):
+        with patch("systems.star_wars_d6.random.randint", side_effect=[1, 3, 3]):
             result = roll("3D")
         assert result.complication
         assert not result.exploded
 
     def test_explode_on_wild_die_6(self):
         # First call returns 6 (wild die explodes), bonus roll returns 4, rest return 2
-        with patch("systems.star_wars.random.randint", side_effect=[6, 4, 2, 2]):
+        with patch("systems.star_wars_d6.random.randint", side_effect=[6, 4, 2, 2]):
             result = roll("3D")
         assert result.exploded
         assert not result.complication
@@ -66,13 +66,13 @@ class TestRoll:
         assert result.total == 14
 
     def test_flags_empty_on_normal(self):
-        with patch("systems.star_wars.random.randint", return_value=4):
+        with patch("systems.star_wars_d6.random.randint", return_value=4):
             result = roll("2D")
         assert result.flags == []
 
     def test_flags_both(self):
         # wild die = 1 gives complication; 1 != 6 so no explode
-        with patch("systems.star_wars.random.randint", side_effect=[1, 3]):
+        with patch("systems.star_wars_d6.random.randint", side_effect=[1, 3]):
             result = roll("2D")
         assert "COMPLICATION" in result.flags
         assert "EXPLODE" not in result.flags

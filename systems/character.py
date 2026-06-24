@@ -34,7 +34,11 @@ def load_characters(system_slug: str) -> list[Character]:
     for path in sorted(system_dir.glob("*.yaml")):
         with open(path) as f:
             data: dict[str, Any] = yaml.safe_load(f) or {}
-        name: str = data.get("meta", {}).get("name", path.stem)
+        name: str = (
+            data.get("meta", {}).get("name")
+            or data.get("character_info", {}).get("name")
+            or path.stem
+        )
         session_hp: Optional[int] = data.get("combat", {}).get("current_hp")
         characters.append(Character(name=name, source_file=path, data=data, session_hp=session_hp))
     return characters

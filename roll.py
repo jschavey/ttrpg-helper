@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 from systems.character import Character, load_characters
-from systems.star_wars import StarWarsSystem
+from systems.star_wars_d6 import StarWarsD6System
 from systems.shadowdark import ShadowdarkSystem
 
 SYSTEMS = [
-    StarWarsSystem(),
+    StarWarsD6System(),
     ShadowdarkSystem(),
 ]
 
