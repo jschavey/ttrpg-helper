@@ -1,0 +1,160 @@
+# ==============================================================================
+# STAR WARS D6 CHARACTER SHEET
+# System: West End Games (WEG) Star Wars D6
+# ==============================================================================
+
+character_info:
+  name: "C4-V3"
+  aliases: ["Cave", "C4"]
+  type: "MerenData Espionage Droid (in Protocol Droid shell)"
+  gender: "agender"
+  pronouns: "it/its"
+  appearance: "Disguised as a standard protocol droid, structurally similar to a 3-PO unit but finished in a stark, matte black plating that absorbs light rather than reflecting it."
+  scale: "Character"
+  move: 8
+  size: 1.7  # meters
+  source: "Dark Force Rising Sourcebook (pp. 100-101), Rebel Alliance Sourcebook (pp. 118-120), The Thrawn Trilogy Sourcebook (pp. 195-196)"
+
+backstory: >
+  To the casual observer, C4-V3 appears to be nothing more than an eccentric, high-end protocol unit clad in matte black plating, perhaps serving a wealthy underworld figure or a flamboyant merchant. In reality, "Cave" is a precision-engineered MerenData espionage asset. Stripped of the standard corporate subroutines and fitted with an advanced espionage hard-wired module, its polite vocabulator and vast linguistic database serve as the perfect front for high-stakes information gathering, slicing, and counter-intelligence. It operates smoothly in high society or deep undercover, watching every gesture and logging every whisper for its compatriots.
+
+attributes_and_skills:
+  DEXTERITY:
+    base: "2D"
+    skills:
+      dodge: "2D+2"
+      pick_pocket: "3D"
+  
+  KNOWLEDGE:
+    base: "3D"
+    skills:
+      cultures: "4D"
+      languages: "8D"
+      value: "6D"
+  
+  MECHANICAL:
+    base: "2D+1"
+    skills:
+      communications: "5D+1"
+      sensors: "5D+1"
+  
+  PERCEPTION:
+    base: "4D"
+    skills:
+      con: "6D"
+      hide: "6D+1"
+      investigation: "6D"
+      search: "6D"
+      sneak: "6D+1"
+  
+  STRENGTH:
+    base: "2D"
+    skills: {}
+  
+  TECHNICAL:
+    base: "3D"
+    skills:
+      computer_programming: "5D"
+      security: "6D"
+
+equipment:
+  - "Humanoid body (head, two arms, two legs)"
+  - "Information recording and coded retrieval/broadcast system"
+  - "Vocabulator speech/sound system"
+  - "Broad-band antenna receiver"
+  - "AA-1 VerboBrain processor"
+  - "TransLand III communication/protocol module"
+  - "Espionage hard-wired module"
+
+meta_game:
+  force_points: 1
+  character_points: 5
+  wounds: "Healthy"
+
+# ==============================================================================
+# SESSION NOTES
+# Append ongoing campaign entries below.
+# ==============================================================================
+session_notes: |
+  Session 1:
+  - Primary goal is to find Stratus
+  - Make contact with Logan Hett (rebel conspirator) and establish cover identity in the local sector hub.
+  - Arrived, contact is missing
+  - Twi'lek woman confirms missing and join us N'tlla
+  - We grab a speeder and head to where we lost contact with Logan, Paul Jessick, capital city
+  - Largest city built into massive canyon
+  - Imperial broadcasts indicate that there has been a rebel cell cracked down on, with rebels arrested
+
+  Session 2:
+  - We are speeding there, Jedi has controls, Twi'lek is navigating, C4-V3 is monitoring sensors and communications
+  - C4-V3 detects lots of signals from the city
+  - Senses rebel propoganada 
+  - but he channel blacks out
+  - impossible to identify remotely but realitivey easy if we find a console
+  - Jedi asks about Startus, N'ttela tells us he's the leader of the rebellion and logan worked for him, he was trusted
+  - She used to be a slave of an imperial and Logan helped free her in exchange for her espionage
+  - She has the holodisk on her!
+  - already decrypted
+  - imperial project: crucible
+  - technical read out of a vast chamber containing 8 octogons arrange circularly echoing the imparial mandala
+  - vents into into the octogons (like a geothermal system)
+  - I fail knowledge check but Jedi passes and learns or rather has a feeling or suspicion that there's some kind of shadow on this planet, maybe the dark side seems espicially potent here at this time
+  - and has the thought, what if the vents are some how projecting dark side energy
+  - jedi wants to have me check for records on dark side tech, fail check, no records
+  - no coordinates for this place
+  - A* logo has branded it Attus Corp
+  - confirmed we know where several Attus Corp buildings, research, housing, and mining campus are; however, no interior for research buildings and other garrison buildings
+  - N'ttela says we're heading in the wrong direction for Stratus
+  - Wexer can take us to Startus she says
+  - as we're talking, I sense a checkpoint is upcoming
+  - no rerouting options, brace yourself
+  - checkpoint has a couple of land speeders, half a dozen stormtroopers, and a turret
+  - I broadcast an imperial signia
+  - we decide to stop for the storm trooper
+  - I present digital ID and Jedi presents his cover ID from the rebel cell
+  - the stormtrooper is suspicious, but we are waved through
+  - we enter the city
+  - N'ttela says Wexer might be at a subterreanean cantina or the star flower club
+  - we park the speeder at the star flower club
+  - it's a cantina, client is largely imperial officers and companions Bebido
+  - Reebos caters to lower classes, I suggest we go there first since it's not imperial
+  - we're surrounded by Arcanians
+  - we head to Reebos
+  - we park and take the stairs to the subteranean cantina
+  - we approach Reebos, with a hammerheaded ithorian head mascot
+  - we enter, the Jedi leads, I follow like a good little protocol droid, and N'ttela brings up the rear
+  - I grab a table with the N'ttela and the Jedi goes to the bartender to ask around
+  - the bartender says Logan is dead
+  - I notice many people are interested in this conversation
+  - I record the descriptions of each
+  - I notice an albino twi'lek, with goggles who grabs a device
+  - I hack the signal and get a message was sent to an unkonwn "get down to Reebos"
+  - someone slides in next to us with a blaster aimed
+  - the alien wants to sell us out the imperials
+  - I attempt to hack his headset but fail with complication, it squeaks and distracts the alien
+  - at this moment the jedi quickly turns on and off his lightsaber, burning a hole into the alien
+  - we put some extra credits on the table and begin to leave as everyone is distracted by the alien's death
+  - but there's a commosino outside and people are being pushed out of the way
+  - N'ttela is standing up and gets shot in the chest and slumped down
+  - a predatory crocadilian growl fills the cantina
+  - 7 foot tall figure is stalking into the interior, followed by albino twi'lek with goggles, and a few other gmorian henchmen
+  - i scan my documents and learn this guy is charged by the empire with violent charges, however many are cleared due to being part of bounting hunting.  he is trandotian known as Su'rook
+  - i position myself behind the Jedi and the Jedi approaches the Trandotian and says "we're looking for Wexer, we have a message for him"
+  - Su'rook checks for weapons but doesn't see any, prepapre mag cuffs
+  - I notice a communicator on his breast pocket
+  - but fail to hack it
+  - the jedi grapple throws su'rook and weilds his lightsaber - beige in color
+  - Su'rook hisses to his henchmen to attack
+  - Jedi deflects blast bolts with his lightsaber
+  - I grab the blaster from N'ttela's body and fire at the henchmen, and hit for 11 damage, he falls down scortched but alive
+  - the jedi cuts down su'rook, who is crawwling away in pain
+  - I blast the secnd henhcman who dodges and returns fire but I dodge bheind my upturned table for cover
+  - the jedi cuts down the henchman I'm exchanging fire with
+  - the rest of the henchman flee, I shoot after the albino twi'lek, I hit but it my blaster gets so hot it will damage my sensors so I drop it
+  - the jedi is going after su'rook, who then suddenly swipes at the jedi with his claws but the jedi dodges (explode roll)
+  - the jedi returns swipes and cuts him down
+  - I grab the vibrating machete and give it to the jedi as I'm too afraid to use it for my sensors
+  - the jedi tries one more time to get info on logan, wexer, and stratus from reboo
+  - we leave but the stormtroopers are incoming from the stairs
+  - we hide in the alley in a side door that's like a storm front that might be someone's home
+  
