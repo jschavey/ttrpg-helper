@@ -11,3 +11,12 @@ provider: "openai_compatible"
 model: "google/gemma-4-26b-a4b-qat"
 base_url: "http://localhost:1234/v1"
 api_key: "your-lm-studio-token-here"
+
+# Optional tuning for openai_compatible:
+# max_tokens: 64               # response budget; names are short
+# think_prefill: "<think>\n\n</think>\n\n"
+#   Reasoning models (Qwen3, etc.) ignore "/no_think" and burn the whole
+#   token budget thinking, returning an empty answer. We seed the assistant
+#   turn with a closed, empty think block so they skip reasoning and reply
+#   instantly. Set think_prefill: "" to disable if your server rejects a
+#   trailing assistant message.

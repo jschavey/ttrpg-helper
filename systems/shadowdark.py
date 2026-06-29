@@ -768,15 +768,38 @@ def _roll_hp(cls: str, con: int, ancestry: str) -> int:
 
 
 _NAME_PATTERN = re.compile(r"^[A-Z][a-zA-Z'\-]+(?: [A-Z][a-zA-Z'\-]+)*$")
+_THINK_BLOCK = re.compile(r"<think\b[^>]*>.*?</think>", re.DOTALL | re.IGNORECASE)
+
+
+def _strip_reasoning(text: str) -> str:
+    """Remove chain-of-thought reasoning from raw model output.
+
+    Reasoning models (Qwen3 and friends) emit their thinking in three shapes,
+    all of which must be discarded so only the final answer remains:
+      * fully-tagged block:     <think> ... </think> NAME
+      * closing tag only:       ... </think> NAME   (the chat template injected
+                                the opening <think>, so only the closer appears)
+      * opening tag only:       NAME? <think> ...   (truncated before it closed;
+                                no answer survives, so drop from <think> onward)
+    """
+    text = _THINK_BLOCK.sub("", text)
+    # A lone </think> means everything before it was reasoning — keep the tail.
+    if "</think>" in text:
+        text = text.rsplit("</think>", 1)[-1]
+    # A lone <think> means reasoning ran to the end with no answer after it.
+    if "<think>" in text:
+        text = text.split("<think>", 1)[0]
+    return text.strip()
 
 
 def _extract_name_from_llm_text(text: str) -> str:
     """Return the best name candidate from raw LLM output.
 
-    Searches lines in reverse (answer tends to come last) for a short line
-    that matches a proper-name shape. Falls back to the last line stripped of
-    list markers if nothing matches cleanly.
+    Strips chain-of-thought first, then searches lines in reverse (the answer
+    tends to come last) for a short line that matches a proper-name shape.
+    Falls back to the last line stripped of list markers if nothing matches.
     """
+    text = _strip_reasoning(text)
     lines = [re.sub(r"^[-*•\d.]+\s*", "", l).strip() for l in text.splitlines() if l.strip()]
     # Prefer lines that look like a name: 1-3 capitalised words, under 40 chars.
     for line in reversed(lines):
@@ -791,7 +814,7 @@ def _llm_generate_name(ancestry: str, gender: str) -> Optional[str]:
     provider = config.get("provider", "anthropic")
     prompt = (
         f"Generate a single fantasy name for a {gender} {ancestry} character "
-        f"in the Shadowdark RPG setting. Reply with only the name, nothing else. /no_think"
+        f"in the Shadowdark RPG setting. Reply with only the name, nothing else."
     )
     system = "You output only a single fantasy name. No punctuation, no explanation, no list markers, no commentary. Just the name."
     try:
@@ -805,29 +828,43 @@ def _llm_generate_name(ancestry: str, gender: str) -> Optional[str]:
                 max_tokens=32,
                 messages=[{"role": "user", "content": prompt}],
             )
-            return msg.content[0].text.strip()
+            # Skip any thinking blocks; concatenate the text block(s) only.
+            text = "".join(
+                getattr(block, "text", "") for block in msg.content
+                if getattr(block, "type", None) == "text"
+            )
+            return text.strip() or None
         elif provider == "openai_compatible":
             from openai import OpenAI
+            from openai.types.chat import ChatCompletionMessageParam
             api_key_env = config.get("api_key_env", "OPENAI_API_KEY")
             api_key = config.get("api_key") or os.environ.get(api_key_env) or "local"
             base_url = config.get("base_url")
             client = OpenAI(api_key=api_key, base_url=base_url) if base_url else OpenAI(api_key=api_key)
+            messages: list[ChatCompletionMessageParam] = [
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ]
+            # Reasoning models (e.g. Qwen3) ignore "/no_think" and spend the
+            # entire token budget thinking, leaving `content` empty. Seeding the
+            # assistant turn with a closed, empty think block makes them skip
+            # reasoning and emit just the name (sub-second). Set think_prefill: ""
+            # in the config to disable for servers that reject a trailing
+            # assistant message.
+            think_prefill = config.get("think_prefill", "<think>\n\n</think>\n\n")
+            if think_prefill:
+                messages.append({"role": "assistant", "content": think_prefill})
             resp = client.chat.completions.create(
                 model=config.get("model", "gpt-4o-mini"),
-                max_tokens=256,
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": prompt},
-                ],
+                max_tokens=config.get("max_tokens", 64),
+                messages=messages,
             )
             msg = resp.choices[0].message
+            # Read only `content` — the answer. Never fall back to
+            # `reasoning_content`: that field holds the chain-of-thought, and
+            # mining it for a name is exactly what surfaced thinking blocks.
+            # _extract_name_from_llm_text strips any leaked <think> markup.
             text = (msg.content or "").strip()
-            # Strip <think>...</think> blocks (some Qwen3 builds use tags).
-            text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
-            # Fall back to reasoning_content if content is empty.
-            if not text:
-                reasoning = getattr(msg, "reasoning_content", None) or ""
-                text = reasoning.strip()
             return _extract_name_from_llm_text(text) or None
     except Exception as e:
         print(f"  LLM error: {e}")
