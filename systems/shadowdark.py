@@ -772,7 +772,7 @@ def _llm_generate_name(ancestry: str, gender: str) -> Optional[str]:
     provider = config.get("provider", "anthropic")
     prompt = (
         f"Generate a single fantasy name for a {gender} {ancestry} character "
-        f"in the Shadowdark RPG setting. Reply with only the name, nothing else."
+        f"in the Shadowdark RPG setting. Reply with only the name, nothing else. /no_think"
     )
     try:
         if provider == "anthropic":
@@ -806,6 +806,10 @@ def _llm_generate_name(ancestry: str, gender: str) -> Optional[str]:
             if not text:
                 reasoning = getattr(msg, "reasoning_content", None) or ""
                 text = reasoning.strip()
+            # If the model output thinking inline (no tags), grab the last non-empty line.
+            if "\n" in text:
+                lines = [l.strip() for l in text.splitlines() if l.strip()]
+                text = lines[-1] if lines else text
             return text or None
     except Exception as e:
         print(f"  LLM error: {e}")
