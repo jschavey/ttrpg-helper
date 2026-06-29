@@ -238,19 +238,219 @@ def print_cast_result(result: CastResult) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Attack
+# ---------------------------------------------------------------------------
+
+@dataclass
+class AttackResult:
+    weapon_name: str
+    weapon_type: str
+    stat_key: str
+    stat_value: int
+    die_roll: int
+    modifiers: list[tuple[str, int]]
+    advantage: Optional[bool]
+    alt_die_roll: Optional[int]
+    backstab: bool = False
+    thrown: bool = False
+
+    @property
+    def total(self) -> int:
+        return self.die_roll + sum(v for _, v in self.modifiers)
+
+    @property
+    def alt_total(self) -> Optional[int]:
+        if self.alt_die_roll is None:
+            return None
+        return self.alt_die_roll + sum(v for _, v in self.modifiers)
+
+    @property
+    def chosen_total(self) -> int:
+        if self.advantage is None or self.alt_total is None:
+            return self.total
+        if self.advantage:
+            return max(self.total, self.alt_total)
+        return min(self.total, self.alt_total)
+
+
+def parse_attack(parts: list[str]) -> tuple[str, bool, bool, Optional[bool], int]:
+    """Parse tokens after 'att': (weapon_name, thrown, backstab, advantage, situational)."""
+    parts = list(parts)
+    thrown = False
+    backstab = False
+    advantage: Optional[bool] = None
+    situational = 0
+
+    if parts and parts[0].lower() == "throw":
+        thrown = True
+        parts = parts[1:]
+    elif parts and parts[0].lower() == "backstab":
+        backstab = True
+        parts = parts[1:]
+
+    # Consume trailing a/d and/or +N in any order (handles "sword a +1" and "sword +1 a")
+    for _ in range(2):
+        if parts and parts[-1].lower() in ("a", "d"):
+            advantage = parts[-1].lower() == "a"
+            parts = parts[:-1]
+        elif parts and re.fullmatch(r'[+-]\d+', parts[-1]):
+            situational = int(parts[-1])
+            parts = parts[:-1]
+
+    weapon_name = " ".join(parts)
+    return weapon_name, thrown, backstab, advantage, situational
+
+
+def roll_attack(
+    weapon_name: str,
+    character: "Character",
+    thrown: bool = False,
+    backstab: bool = False,
+    advantage: Optional[bool] = None,
+    situational: int = 0,
+    both_flags: bool = False,
+) -> AttackResult:
+    """Roll an attack. Raises ValueError on invalid input."""
+    if both_flags:
+        raise ValueError("Cannot combine advantage and disadvantage.")
+
+    weapons: list[dict] | None = character.data.get("weapons")
+    if not weapons:
+        raise ValueError("No weapons defined on this character sheet.")
+
+    weapon = next(
+        (w for w in weapons if w["name"].lower() == weapon_name.lower()),
+        None,
+    )
+    if weapon is None:
+        available = ", ".join(w["name"] for w in weapons)
+        raise ValueError(f"Unknown weapon: {weapon_name}. Available: {available}.")
+
+    if thrown and not weapon.get("throwable", False):
+        raise ValueError(f"{weapon['name']} is not throwable.")
+
+    cls = character.data.get("meta", {}).get("class", "").lower()
+    if backstab and cls != "thief":
+        raise ValueError("Backstab is a Thief-only ability.")
+
+    if backstab:
+        advantage = True
+
+    weapon_type = weapon["type"]
+    stat_key = "str" if weapon_type == "melee" or thrown else "dex"
+    stat_value = character.data.get("stats", {}).get(stat_key, 10)
+    stat_mod = (stat_value - 10) // 2
+
+    modifiers: list[tuple[str, int]] = [
+        (f"{stat_key.upper()} {stat_value:+d}", stat_mod),
+    ]
+    if situational:
+        modifiers.append((f"Situational {situational:+d}", situational))
+
+    die_roll = random.randint(1, 20)
+    alt_die_roll = random.randint(1, 20) if advantage is not None else None
+
+    return AttackResult(
+        weapon_name=weapon["name"],
+        weapon_type=weapon_type,
+        stat_key=stat_key,
+        stat_value=stat_value,
+        die_roll=die_roll,
+        modifiers=modifiers,
+        advantage=advantage,
+        alt_die_roll=alt_die_roll,
+        backstab=backstab,
+        thrown=thrown,
+    )
+
+
+def print_attack_result(result: AttackResult) -> None:
+    mode = "Backstab" if result.backstab else ("Thrown" if result.thrown else "Attack")
+    adv_label = " (advantage)" if result.advantage is True else " (disadvantage)" if result.advantage is False else ""
+    print(f"\n⚔  {mode} — {result.weapon_name.title()} ({result.weapon_type}){adv_label}")
+    col = 20
+    if result.advantage is None:
+        print(f"  {'Source':<{col}}  Value")
+        print(f"  {'-' * col}  -----")
+        print(f"  {'D20 roll':<{col}}  {result.die_roll}")
+        for label, value in result.modifiers:
+            sign = f"+{value}" if value >= 0 else str(value)
+            print(f"  {label:<{col}}  {sign}")
+        print(f"  {'─' * col}  ─────")
+        print(f"  {'Total':<{col}}  {result.total}")
+    else:
+        _print_d20_roll_block("[Roll 1]", result.die_roll, result.modifiers, col)
+        _print_d20_roll_block("[Roll 2]", result.alt_die_roll or 0, result.modifiers, col)
+        rule = "higher" if result.advantage else "lower"
+        print(f"\n  Taking {rule}: {result.chosen_total}")
+
+
+# ---------------------------------------------------------------------------
 # Autocomplete
 # ---------------------------------------------------------------------------
 
 class _CommandCompleter(Completer):
-    """Completes arguments for 'cast', 'check', and 'roll' commands."""
+    """Completes arguments for 'cast', 'check', 'roll', and 'att' commands."""
 
-    def __init__(self, spells: list[str]) -> None:
+    def __init__(self, spells: list[str], character: Optional["Character"] = None) -> None:
         self.spells = spells
+        self.character = character
         self._check_options = sorted(CHECKS.keys())
         self._roll_options = ["init"]
 
+    def _weapon_names(self, throwable_only: bool = False) -> list[str]:
+        if self.character is None:
+            return []
+        weapons: list[dict] = self.character.data.get("weapons", []) or []
+        if throwable_only:
+            return [w["name"] for w in weapons if w.get("throwable")]
+        return [w["name"] for w in weapons]
+
     def get_completions(self, document, complete_event):
         text = document.text_before_cursor
+
+        # --- att command ---
+        m_att = re.match(r'^att\s+', text, re.IGNORECASE)
+        if m_att:
+            typed = text[m_att.end():]
+            cls = ""
+            if self.character:
+                cls = self.character.data.get("meta", {}).get("class", "").lower()
+
+            # After "att throw "
+            m_throw = re.match(r'^throw\s+', typed, re.IGNORECASE)
+            if m_throw:
+                sub = typed[m_throw.end():]
+                for name in self._weapon_names(throwable_only=True):
+                    if name.lower().startswith(sub.lower()):
+                        yield Completion(name, start_position=-len(sub))
+                return
+
+            # After "att backstab "
+            m_back = re.match(r'^backstab\s+', typed, re.IGNORECASE)
+            if m_back:
+                sub = typed[m_back.end():]
+                for name in self._weapon_names():
+                    if name.lower().startswith(sub.lower()):
+                        yield Completion(name, start_position=-len(sub))
+                return
+
+            # After weapon name — offer a, d, modifiers
+            weapon_names = self._weapon_names()
+            for wname in weapon_names:
+                if typed.lower().startswith(wname.lower() + " "):
+                    sub = typed[len(wname) + 1:]
+                    for opt in ["a", "d", "+1", "-1", "+2", "-2"]:
+                        if opt.startswith(sub):
+                            yield Completion(opt, start_position=-len(sub))
+                    return
+
+            # First token after "att "
+            for opt in (["throw"] + (["backstab"] if cls == "thief" else []) + weapon_names):
+                if opt.lower().startswith(typed.lower()):
+                    yield Completion(opt, start_position=-len(typed))
+            return
+
         m = re.match(r'^(cast|check|roll)\s+', text, re.IGNORECASE)
         if not m:
             return
@@ -433,7 +633,7 @@ class ShadowdarkSystem(RpgSystem):
         print("\nEnter dice notation (e.g. D20, 2D6+1, D20-3) or 'q' to quit.")
         print("Append 'a' for advantage or 'd' for disadvantage (e.g. 2D6+1 a, D20 d).")
         prompt_str = "\nWhat do you do Next?> " if character else "\nRoll> "
-        completer = _CommandCompleter(get_character_spells(character)) if character else None
+        completer = _CommandCompleter(get_character_spells(character), character=character) if character else None
         try:
             self._roll_loop(prompt_str, character, completer, banner)
         finally:
@@ -496,6 +696,34 @@ class ShadowdarkSystem(RpgSystem):
                     continue
                 result_cast = cast(spell_name, character, situational, cast_advantage)
                 print_cast_result(result_cast)
+                continue
+
+            # --- att ---
+            if cmd == "att":
+                if character is None:
+                    print("No character loaded — att requires a character sheet.")
+                    continue
+                att_parts = parts[1:]
+                if not att_parts:
+                    print("Usage: att [throw|backstab] <weapon> [a|d] [+N|-N]")
+                    continue
+                weapon_name, thrown, backstab, att_adv, situational = parse_attack(att_parts)
+                both_flags = att_adv is not None and backstab  # backstab overrides d; only flag a+d explicitly
+                # Check for explicit a and d tokens together
+                lower_parts = [p.lower() for p in att_parts]
+                if "a" in lower_parts and "d" in lower_parts:
+                    print("Cannot combine advantage and disadvantage.")
+                    continue
+                try:
+                    att_result = roll_attack(
+                        weapon_name, character,
+                        thrown=thrown, backstab=backstab,
+                        advantage=att_adv, situational=situational,
+                    )
+                except ValueError as exc:
+                    print(str(exc))
+                    continue
+                print_attack_result(att_result)
                 continue
 
             # --- hp ---

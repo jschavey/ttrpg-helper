@@ -39,6 +39,14 @@ spells:
   tier_2:
     - "Augury"
 
+weapons:
+  - name: mace
+    type: melee
+    throwable: false
+  - name: dagger
+    type: melee
+    throwable: true
+
 items:
   - "35 gold"
   - "Shield (+2 AC)"
