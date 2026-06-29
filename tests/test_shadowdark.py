@@ -3,6 +3,7 @@ from systems.shadowdark import (
     parse_notation, roll, ShadowdarkRollResult,
     check, CheckResult,
     cast, CastResult, get_character_spells, _parse_cast_args,
+    _CommandCompleter,
 )
 
 
@@ -336,6 +337,98 @@ class TestCast:
             result = cast("Cure Wounds", char, situational=2)
         mod_sum = sum(v for _, v in result.modifiers)
         assert result.total == result.die_roll + mod_sum
+
+
+class TestInitiative:
+    """Initiative is a DEX check with the label overridden to 'Initiative'."""
+
+    def test_uses_dex_stat(self):
+        char = _make_character({"dex": 14})
+        with patch("systems.shadowdark.random.randint", return_value=10):
+            result = check("dex", char)
+        assert result is not None
+        result.check_name = "Initiative"
+        assert result.stat_key == "dex"
+
+    def test_total_dex_mod_applied(self):
+        char = _make_character({"dex": 14})  # mod = +2
+        with patch("systems.shadowdark.random.randint", return_value=10):
+            result = check("dex", char)
+        assert result is not None
+        assert result.total == 12
+
+    def test_negative_dex_mod(self):
+        char = _make_character({"dex": 8})  # mod = -1
+        with patch("systems.shadowdark.random.randint", return_value=10):
+            result = check("dex", char)
+        assert result is not None
+        assert result.total == 9
+
+    def test_advantage_picks_higher(self):
+        char = _make_character({"dex": 10})  # mod = 0
+        with patch("systems.shadowdark.random.randint", side_effect=[3, 17]):
+            result = check("dex", char, advantage=True)
+        assert result is not None
+        assert result.chosen_total == 17
+
+    def test_disadvantage_picks_lower(self):
+        char = _make_character({"dex": 10})  # mod = 0
+        with patch("systems.shadowdark.random.randint", side_effect=[3, 17]):
+            result = check("dex", char, advantage=False)
+        assert result is not None
+        assert result.chosen_total == 3
+
+    def test_advantage_applies_mod_to_chosen(self):
+        char = _make_character({"dex": 16})  # mod = +3
+        with patch("systems.shadowdark.random.randint", side_effect=[6, 14]):
+            result = check("dex", char, advantage=True)
+        assert result is not None
+        assert result.chosen_total == 17  # 14 + 3
+
+    def test_missing_dex_returns_none(self):
+        char = _make_character({})
+        assert check("dex", char) is None
+
+    def test_label_override(self):
+        char = _make_character({"dex": 10})
+        result = check("dex", char)
+        assert result is not None
+        result.check_name = "Initiative"
+        assert result.check_name == "Initiative"
+
+
+class TestCommandCompleterRollInit:
+    def test_init_in_roll_options(self):
+        completer = _CommandCompleter([])
+        assert "init" in completer._roll_options
+
+    def test_completes_init_after_roll(self):
+        from prompt_toolkit.document import Document
+        completer = _CommandCompleter([])
+        doc = Document("roll i", len("roll i"))
+        completions = list(completer.get_completions(doc, None))
+        assert any(c.text == "init" for c in completions)
+
+    def test_no_completion_without_roll_prefix(self):
+        from prompt_toolkit.document import Document
+        completer = _CommandCompleter([])
+        doc = Document("init", len("init"))
+        completions = list(completer.get_completions(doc, None))
+        assert completions == []
+
+    def test_full_init_still_completes(self):
+        from prompt_toolkit.document import Document
+        completer = _CommandCompleter([])
+        doc = Document("roll init", len("roll init"))
+        completions = list(completer.get_completions(doc, None))
+        assert any(c.text == "init" for c in completions)
+
+    def test_roll_does_not_complete_spells(self):
+        from prompt_toolkit.document import Document
+        completer = _CommandCompleter(["Cure Wounds"])
+        doc = Document("roll C", len("roll C"))
+        completions = list(completer.get_completions(doc, None))
+        assert not any(c.text == "Cure Wounds" for c in completions)
 
 
 class TestGetCharacterSpells:

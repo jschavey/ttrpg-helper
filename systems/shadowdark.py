@@ -242,20 +242,26 @@ def print_cast_result(result: CastResult) -> None:
 # ---------------------------------------------------------------------------
 
 class _CommandCompleter(Completer):
-    """Completes arguments for 'cast' (spell names) and 'check' (stat/check names)."""
+    """Completes arguments for 'cast', 'check', and 'roll' commands."""
 
     def __init__(self, spells: list[str]) -> None:
         self.spells = spells
         self._check_options = sorted(CHECKS.keys())
+        self._roll_options = ["init"]
 
     def get_completions(self, document, complete_event):
         text = document.text_before_cursor
-        m = re.match(r'^(cast|check)\s+', text, re.IGNORECASE)
+        m = re.match(r'^(cast|check|roll)\s+', text, re.IGNORECASE)
         if not m:
             return
         cmd = m.group(1).lower()
         typed = text[m.end():]
-        options = self.spells if cmd == "cast" else self._check_options
+        if cmd == "cast":
+            options = self.spells
+        elif cmd == "check":
+            options = self._check_options
+        else:  # roll
+            options = self._roll_options
         for option in options:
             if option.lower().startswith(typed.lower()):
                 yield Completion(option, start_position=-len(typed))
@@ -513,6 +519,26 @@ class ShadowdarkSystem(RpgSystem):
                     print("  *** CHARACTER IS DOWN (0 HP or below)! ***")
                 if banner is not None:
                     banner.redraw(build_banner_lines(self.name, character))
+                continue
+
+            # --- roll init ---
+            if cmd == "roll" and len(parts) > 1 and parts[1].lower() == "init":
+                if character is None:
+                    print("No character loaded — initiative requires a character sheet.")
+                    continue
+                init_advantage: Optional[bool] = None
+                if len(parts) > 2:
+                    flag = parts[2].lower()
+                    if flag == "a":
+                        init_advantage = True
+                    elif flag == "d":
+                        init_advantage = False
+                result_init = check("dex", character, init_advantage)
+                if result_init is None:
+                    print("Character is missing DEX stat.")
+                else:
+                    result_init.check_name = "Initiative"
+                    print_check_result(result_init)
                 continue
 
             # --- roll (dice notation) ---
