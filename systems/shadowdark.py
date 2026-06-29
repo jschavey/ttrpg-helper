@@ -840,24 +840,24 @@ def create_character() -> Optional[Character]:
         while name is None:
             raw = _prompt_freetext("  Name> ")
             if raw.lower() == "random":
-                print("  Asking the LLM for a name...", end="", flush=True)
+                print("  Asking the LLM for a name...")
                 generated = _llm_generate_name(ancestry, gender)
                 if generated is None:
-                    print("\n  LLM unavailable — please enter a name manually.")
+                    print("  LLM unavailable — please enter a name manually.")
                     continue
-                print(f"\r  Suggested: {generated}             ")
+                print(f"  Suggested: {generated}")
                 while True:
                     confirm = _prompt_choice("  Accept? > ", ["yes", "no", "custom"])
                     if confirm == "yes":
                         name = generated
                         break
                     elif confirm == "no":
-                        print("  Asking the LLM for another name...", end="", flush=True)
+                        print("  Asking the LLM for another name...")
                         generated = _llm_generate_name(ancestry, gender)
                         if generated is None:
-                            print("\n  LLM unavailable — please enter a name manually.")
+                            print("  LLM unavailable — please enter a name manually.")
                             break
-                        print(f"\r  Suggested: {generated}             ")
+                        print(f"  Suggested: {generated}")
                     else:
                         name = _prompt_freetext("  Enter custom name> ")
                         break
