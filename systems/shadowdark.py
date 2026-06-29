@@ -774,6 +774,7 @@ def _llm_generate_name(ancestry: str, gender: str) -> Optional[str]:
         f"Generate a single fantasy name for a {gender} {ancestry} character "
         f"in the Shadowdark RPG setting. Reply with only the name, nothing else. /no_think"
     )
+    system = "You output only a single fantasy name. No punctuation, no explanation, no list markers, no commentary. Just the name."
     try:
         if provider == "anthropic":
             import anthropic
@@ -795,21 +796,25 @@ def _llm_generate_name(ancestry: str, gender: str) -> Optional[str]:
             resp = client.chat.completions.create(
                 model=config.get("model", "gpt-4o-mini"),
                 max_tokens=256,
-                messages=[{"role": "user", "content": prompt}],
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": prompt},
+                ],
             )
             msg = resp.choices[0].message
             text = (msg.content or "").strip()
-            # Qwen3 thinking models may wrap the answer in <think>...</think>;
-            # strip those tags and take whatever follows.
+            # Strip <think>...</think> blocks (some Qwen3 builds use tags).
             text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
-            # If still empty, check reasoning_content (some LM Studio builds expose it).
+            # Fall back to reasoning_content if content is empty.
             if not text:
                 reasoning = getattr(msg, "reasoning_content", None) or ""
                 text = reasoning.strip()
-            # If the model output thinking inline (no tags), grab the last non-empty line.
+            # If thinking leaked inline, take the last non-empty line.
             if "\n" in text:
                 lines = [l.strip() for l in text.splitlines() if l.strip()]
                 text = lines[-1] if lines else text
+            # Strip leading list markers (-, *, •, "1.") left by thinking models.
+            text = re.sub(r"^[-*•\d.]+\s*", "", text).strip()
             return text or None
     except Exception as e:
         print(f"  LLM error: {e}")
