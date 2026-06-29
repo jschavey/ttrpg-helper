@@ -794,10 +794,19 @@ def _llm_generate_name(ancestry: str, gender: str) -> Optional[str]:
             client = OpenAI(api_key=api_key, base_url=base_url) if base_url else OpenAI(api_key=api_key)
             resp = client.chat.completions.create(
                 model=config.get("model", "gpt-4o-mini"),
-                max_tokens=32,
+                max_tokens=256,
                 messages=[{"role": "user", "content": prompt}],
             )
-            return resp.choices[0].message.content.strip()
+            msg = resp.choices[0].message
+            text = (msg.content or "").strip()
+            # Qwen3 thinking models may wrap the answer in <think>...</think>;
+            # strip those tags and take whatever follows.
+            text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+            # If still empty, check reasoning_content (some LM Studio builds expose it).
+            if not text:
+                reasoning = getattr(msg, "reasoning_content", None) or ""
+                text = reasoning.strip()
+            return text or None
     except Exception as e:
         print(f"  LLM error: {e}")
     return None
