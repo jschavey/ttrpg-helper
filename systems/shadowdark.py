@@ -11,7 +11,7 @@ from prompt_toolkit.completion import Completer, Completion, WordCompleter
 
 from .banner import Banner, build_banner_lines
 from .base import RpgSystem
-from .character import Character
+from .character import Character, load_characters
 
 
 # Maps input aliases to (stat_key, display_name).
@@ -809,7 +809,7 @@ def _extract_name_from_llm_text(text: str) -> str:
     return lines[-1] if lines else text.strip()
 
 
-def _llm_generate_name(ancestry: str, gender: str) -> Optional[str]:
+def _llm_generate_name(ancestry: str, gender: str, exclude: set[str] | None = None) -> Optional[str]:
     config = _load_llm_config()
     provider = config.get("provider", "anthropic")
     prompt = (
@@ -817,58 +817,71 @@ def _llm_generate_name(ancestry: str, gender: str) -> Optional[str]:
         f"in the Shadowdark RPG setting. Reply with only the name, nothing else."
     )
     system = "You output only a single fantasy name. No punctuation, no explanation, no list markers, no commentary. Just the name."
-    try:
-        if provider == "anthropic":
-            import anthropic
-            api_key_env = config.get("api_key_env", "ANTHROPIC_API_KEY")
-            api_key = os.environ.get(api_key_env)
-            client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
-            msg = client.messages.create(
-                model=config.get("model", "claude-haiku-4-5-20251001"),
-                max_tokens=32,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            # Skip any thinking blocks; concatenate the text block(s) only.
-            text = "".join(
-                getattr(block, "text", "") for block in msg.content
-                if getattr(block, "type", None) == "text"
-            )
-            return text.strip() or None
-        elif provider == "openai_compatible":
-            from openai import OpenAI
-            from openai.types.chat import ChatCompletionMessageParam
-            api_key_env = config.get("api_key_env", "OPENAI_API_KEY")
-            api_key = config.get("api_key") or os.environ.get(api_key_env) or "local"
-            base_url = config.get("base_url")
-            client = OpenAI(api_key=api_key, base_url=base_url) if base_url else OpenAI(api_key=api_key)
-            messages: list[ChatCompletionMessageParam] = [
-                {"role": "system", "content": system},
-                {"role": "user", "content": prompt},
-            ]
-            # Reasoning models (e.g. Qwen3) ignore "/no_think" and spend the
-            # entire token budget thinking, leaving `content` empty. Seeding the
-            # assistant turn with a closed, empty think block makes them skip
-            # reasoning and emit just the name (sub-second). Set think_prefill: ""
-            # in the config to disable for servers that reject a trailing
-            # assistant message.
-            think_prefill = config.get("think_prefill", "<think>\n\n</think>\n\n")
-            if think_prefill:
-                messages.append({"role": "assistant", "content": think_prefill})
-            resp = client.chat.completions.create(
-                model=config.get("model", "gpt-4o-mini"),
-                max_tokens=config.get("max_tokens", 64),
-                messages=messages,
-            )
-            msg = resp.choices[0].message
-            # Read only `content` — the answer. Never fall back to
-            # `reasoning_content`: that field holds the chain-of-thought, and
-            # mining it for a name is exactly what surfaced thinking blocks.
-            # _extract_name_from_llm_text strips any leaked <think> markup.
-            text = (msg.content or "").strip()
-            return _extract_name_from_llm_text(text) or None
-    except Exception as e:
-        print(f"  LLM error: {e}")
-    return None
+
+    def _call_once() -> Optional[str]:
+        try:
+            if provider == "anthropic":
+                import anthropic
+                api_key_env = config.get("api_key_env", "ANTHROPIC_API_KEY")
+                api_key = os.environ.get(api_key_env)
+                client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
+                msg = client.messages.create(
+                    model=config.get("model", "claude-haiku-4-5-20251001"),
+                    max_tokens=32,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                # Skip any thinking blocks; concatenate the text block(s) only.
+                text = "".join(
+                    getattr(block, "text", "") for block in msg.content
+                    if getattr(block, "type", None) == "text"
+                )
+                return text.strip() or None
+            elif provider == "openai_compatible":
+                from openai import OpenAI
+                from openai.types.chat import ChatCompletionMessageParam
+                api_key_env = config.get("api_key_env", "OPENAI_API_KEY")
+                api_key = config.get("api_key") or os.environ.get(api_key_env) or "local"
+                base_url = config.get("base_url")
+                client = OpenAI(api_key=api_key, base_url=base_url) if base_url else OpenAI(api_key=api_key)
+                messages: list[ChatCompletionMessageParam] = [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": prompt},
+                ]
+                # Reasoning models (e.g. Qwen3) ignore "/no_think" and spend the
+                # entire token budget thinking, leaving `content` empty. Seeding the
+                # assistant turn with a closed, empty think block makes them skip
+                # reasoning and emit just the name (sub-second). Set think_prefill: ""
+                # in the config to disable for servers that reject a trailing
+                # assistant message.
+                think_prefill = config.get("think_prefill", "<think>\n\n</think>\n\n")
+                if think_prefill:
+                    messages.append({"role": "assistant", "content": think_prefill})
+                resp = client.chat.completions.create(
+                    model=config.get("model", "gpt-4o-mini"),
+                    max_tokens=config.get("max_tokens", 64),
+                    messages=messages,
+                )
+                msg = resp.choices[0].message
+                # Read only `content` — the answer. Never fall back to
+                # `reasoning_content`: that field holds the chain-of-thought, and
+                # mining it for a name is exactly what surfaced thinking blocks.
+                # _extract_name_from_llm_text strips any leaked <think> markup.
+                text = (msg.content or "").strip()
+                return _extract_name_from_llm_text(text) or None
+        except Exception as e:
+            print(f"  LLM error: {e}")
+        return None
+
+    existing: set[str] = exclude if exclude is not None else {c.name.lower() for c in load_characters("shadowdark")}
+    last: Optional[str] = None
+    for _ in range(5):
+        last = _call_once()
+        if last is None:
+            return None
+        if last.lower() not in existing:
+            return last
+        print(f"  ('{last}' already exists — retrying...)")
+    return last  # return the last one even if still a duplicate after 5 tries
 
 
 def create_character() -> Optional[Character]:
