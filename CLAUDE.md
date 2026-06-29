@@ -44,6 +44,21 @@ Each RPG system lives in `systems/` and extends `systems/base.py:RpgSystem` (ABC
 
 **Adding a new system:** implement `RpgSystem` in `systems/<name>.py`, add an instance to `SYSTEMS` in `roll.py`, and add character YAML files under `data/<system_slug>/`.
 
+## Shadowdark in-game commands
+
+When a character is loaded, `_roll_loop` in `systems/shadowdark.py` dispatches these commands in addition to raw dice notation:
+
+| Command | Syntax | Notes |
+|---------|--------|-------|
+| `check` | `check <name> [a\|d]` | Stat or named check (perception, stealth…); a=advantage, d=disadvantage |
+| `cast` | `cast <spell> [+N\|-N] [a\|d]` | Applies class spellcasting stat mod + talent bonuses |
+| `att` | `att [throw\|backstab] <weapon> [a\|d] [+N\|-N]` | Melee→STR, ranged→DEX, thrown→STR; backstab is Thief-only (auto-advantage) |
+| `hp` | `hp +N` / `hp -N` | Updates session HP and persists to the YAML file |
+| `roll init` | `roll init [a\|d]` | DEX check labelled "Initiative" |
+| `roll` | `roll <notation> [a\|d]` | Raw dice: `D20`, `2D6+1`, `D20-3` etc. |
+
+Stat modifier formula throughout: `(stat_value - 10) // 2`.
+
 ## Character YAML schemas
 
 Two schemas exist — each system reads its own:
@@ -52,6 +67,9 @@ Two schemas exist — each system reads its own:
 - `meta` — name, system, ancestry, class, level, `status: "finished" | "ongoing"` (story menu grouping; defaults to `"ongoing"`)
 - `combat` — hp, ac_normal, ac_shield
 - `stats` — str/dex/con/int/wis/cha
+- `weapons` *(optional)* — list of `{name, type: melee|ranged, throwable?: bool}`; required for `att` command; omitting the key is safe
+- `spells` — dict of tier lists (`tier_1: [...]`); consumed by `cast` autocomplete
+- `talents` — list of strings; `"+1 to priest spellcasting checks"` is the only talent text currently parsed
 - `personality_and_hooks`, `campaign_context` — freeform text consumed by the narrator
 
 **Star Wars D6 WEG** (`data/star-wars-d6/*.yaml`) — see `C4V3.yaml` for a full example:
