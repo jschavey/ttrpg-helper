@@ -767,6 +767,25 @@ def _roll_hp(cls: str, con: int, ancestry: str) -> int:
     return hp
 
 
+_NAME_PATTERN = re.compile(r"^[A-Z][a-zA-Z'\-]+(?: [A-Z][a-zA-Z'\-]+)*$")
+
+
+def _extract_name_from_llm_text(text: str) -> str:
+    """Return the best name candidate from raw LLM output.
+
+    Searches lines in reverse (answer tends to come last) for a short line
+    that matches a proper-name shape. Falls back to the last line stripped of
+    list markers if nothing matches cleanly.
+    """
+    lines = [re.sub(r"^[-*•\d.]+\s*", "", l).strip() for l in text.splitlines() if l.strip()]
+    # Prefer lines that look like a name: 1-3 capitalised words, under 40 chars.
+    for line in reversed(lines):
+        if _NAME_PATTERN.match(line) and len(line) <= 40:
+            return line
+    # Fallback: last cleaned line
+    return lines[-1] if lines else text.strip()
+
+
 def _llm_generate_name(ancestry: str, gender: str) -> Optional[str]:
     config = _load_llm_config()
     provider = config.get("provider", "anthropic")
@@ -809,13 +828,7 @@ def _llm_generate_name(ancestry: str, gender: str) -> Optional[str]:
             if not text:
                 reasoning = getattr(msg, "reasoning_content", None) or ""
                 text = reasoning.strip()
-            # If thinking leaked inline, take the last non-empty line.
-            if "\n" in text:
-                lines = [l.strip() for l in text.splitlines() if l.strip()]
-                text = lines[-1] if lines else text
-            # Strip leading list markers (-, *, •, "1.") left by thinking models.
-            text = re.sub(r"^[-*•\d.]+\s*", "", text).strip()
-            return text or None
+            return _extract_name_from_llm_text(text) or None
     except Exception as e:
         print(f"  LLM error: {e}")
     return None
