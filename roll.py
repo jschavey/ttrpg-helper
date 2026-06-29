@@ -15,7 +15,7 @@ def character_menu(system_slug: str):
         characters = load_characters(system_slug)
 
         print()
-        options = list(characters)
+        options = [c for c in characters if c.data.get("meta", {}).get("status", "ongoing") != "finished"]
         for i, char in enumerate(options, 1):
             print(f"{i}. {char.name}")
         new_idx = len(options) + 1
