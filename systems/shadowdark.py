@@ -1,10 +1,13 @@
+import os
 import random
 import re
 from dataclasses import dataclass
-from typing import Optional
+from pathlib import Path
+from typing import Any, Optional
 
+import yaml
 from prompt_toolkit import prompt as pt_prompt
-from prompt_toolkit.completion import Completer, Completion
+from prompt_toolkit.completion import Completer, Completion, WordCompleter
 
 from .banner import Banner, build_banner_lines
 from .base import RpgSystem
@@ -600,6 +603,357 @@ def print_result(notation: str, result: ShadowdarkRollResult) -> None:
 
         rule = "higher" if result.advantage else "lower"
         print(f"\n  Taking {rule}: {result.chosen_total}")
+
+
+# ---------------------------------------------------------------------------
+# Character Creation
+# ---------------------------------------------------------------------------
+
+_DATA_DIR = Path(__file__).parent.parent / "data"
+_LLM_CONFIG_PATH = Path(__file__).parent.parent / "llm_config.yaml"
+
+ANCESTRIES = ["Human", "Elf", "Dwarf", "Halfling", "Half-Orc"]
+CLASSES = ["Fighter", "Priest", "Thief", "Wizard"]
+_GENDER_OPTIONS = ["Male", "Female", "Freeform", "Random"]
+
+_ANCESTRY_LANGUAGES: dict[str, list[str]] = {
+    "Human": [],
+    "Elf": ["Elvish", "Sylvan"],
+    "Dwarf": ["Dwarvish"],
+    "Halfling": [],
+    "Half-Orc": ["Orcish"],
+    "Goblin": ["Goblin"],
+}
+
+_HIT_DICE: dict[str, int] = {
+    "fighter": 8,
+    "priest": 6,
+    "thief": 4,
+    "wizard": 4,
+}
+
+_BACKSTORY_TABLE = [
+    ("Urchin", "You grew up in the merciless streets of a large city"),
+    ("Wanted", "There's a price on your head, but you have allies"),
+    ("Cult Initiate", "You know blasphemous secrets and rituals"),
+    ("Thieve's Guild", "You have connections, contacts, and debts"),
+    ("Banished", "Your people cast you out for supposed crimes"),
+    ("Orphaned", "An unusual guardian rescued and raised you"),
+    ("Wizard's Apprentice", "You have a knack and eye for magic"),
+    ("Jeweler", "You can easily appraise value and authenticity"),
+    ("Herbalist", "You know plants, medicines, and poisons"),
+    ("Barbarian", "You left the horde, but it never quite left you"),
+    ("Mercenary", "You fought friend and foe alike for your coin"),
+    ("Sailor", "Pirate, privateer, or merchant — the seas are yours"),
+    ("Acolyte", "You're well trained in religious rites and doctrines"),
+    ("Soldier", "You served as a fighter in an organized army"),
+    ("Ranger", "The woods and wilds are your true home"),
+    ("Scout", "You survived on stealth, observation, and speed"),
+    ("Minstrel", "You've traveled far with your charm and talent"),
+    ("Scholar", "You know much about ancient history and lore"),
+    ("Noble", "A famous name has opened many doors for you"),
+    ("Chirurgeon", "You know anatomy, surgery, and first aid"),
+]
+
+_AUTO_PRONOUNS: dict[str, str] = {
+    "male": "he/him",
+    "female": "she/her",
+    "non-binary": "they/them",
+}
+
+
+def _load_llm_config() -> dict[str, Any]:
+    if not _LLM_CONFIG_PATH.exists():
+        return {"provider": "anthropic", "model": "claude-haiku-4-5-20251001"}
+    with open(_LLM_CONFIG_PATH) as f:
+        return yaml.safe_load(f) or {}
+
+
+def _slugify(name: str) -> str:
+    slug = name.lower().strip()
+    slug = re.sub(r"[^a-z0-9\s-]", "", slug)
+    slug = re.sub(r"\s+", "-", slug)
+    return slug
+
+
+def _unique_yaml_path(name: str) -> Path:
+    base = _slugify(name)
+    target = _DATA_DIR / "shadowdark" / f"{base}.yaml"
+    if not target.exists():
+        return target
+    i = 2
+    while True:
+        candidate = _DATA_DIR / "shadowdark" / f"{base}_{i}.yaml"
+        if not candidate.exists():
+            return candidate
+        i += 1
+
+
+def _prompt_choice(prompt_str: str, options: list[str]) -> str:
+    """Prompt with autocomplete until a valid option is entered. q/ctrl-C aborts."""
+    completer = WordCompleter(options, ignore_case=True)
+    lower_map = {o.lower(): o for o in options}
+    while True:
+        try:
+            val = pt_prompt(prompt_str, completer=completer).strip()
+        except (EOFError, KeyboardInterrupt):
+            raise KeyboardInterrupt
+        if val.lower() in ("q", "quit"):
+            raise KeyboardInterrupt
+        if val.lower() in lower_map:
+            return lower_map[val.lower()]
+        print(f"  Please choose from: {', '.join(options)}")
+
+
+def _prompt_freetext(prompt_str: str) -> str:
+    """Prompt for non-empty free text. q/ctrl-C aborts."""
+    while True:
+        try:
+            val = pt_prompt(prompt_str).strip()
+        except (EOFError, KeyboardInterrupt):
+            raise KeyboardInterrupt
+        if val.lower() in ("q", "quit"):
+            raise KeyboardInterrupt
+        if val:
+            return val
+        print("  Cannot be empty.")
+
+
+def _roll_stats() -> dict[str, int]:
+    stat_keys = ["str", "dex", "con", "int", "wis", "cha"]
+    stat_labels = ["STR", "DEX", "CON", "INT", "WIS", "CHA"]
+    attempt = 0
+    while True:
+        attempt += 1
+        roll_sets = [[random.randint(1, 6) for _ in range(3)] for _ in stat_keys]
+        totals = [sum(s) for s in roll_sets]
+        if max(totals) >= 14:
+            print(f"  Stats (attempt {attempt}):")
+            for label, dice_set, total in zip(stat_labels, roll_sets, totals):
+                marker = "  ✓ (≥14)" if total >= 14 else ""
+                print(f"    {label}: rolled 3d6 → {dice_set} = {total}{marker}")
+            return dict(zip(stat_keys, totals))
+        else:
+            print(f"  Stats (attempt {attempt}): {' '.join(str(s) for s in roll_sets)} — no stat ≥ 14, rerolling...")
+
+
+def _roll_gold() -> int:
+    dice = [random.randint(1, 6) for _ in range(2)]
+    total = sum(dice) * 5
+    print(f"  Gold: rolled 2d6 → {dice} × 5 = {total}gp")
+    return total
+
+
+def _roll_backstory() -> tuple[str, str]:
+    roll = random.randint(1, 20)
+    title, detail = _BACKSTORY_TABLE[roll - 1]
+    print(f"  Backstory: rolled 1d20 → {roll} = {title}")
+    return title, detail
+
+
+def _roll_hp(cls: str, con: int, ancestry: str) -> int:
+    hit_die = _HIT_DICE.get(cls.lower(), 6)
+    con_mod = (con - 10) // 2
+    is_dwarf = ancestry.lower() == "dwarf"
+    roll1 = random.randint(1, hit_die)
+    if is_dwarf:
+        roll2 = random.randint(1, hit_die)
+        chosen = max(roll1, roll2)
+        hp = max(1, chosen + con_mod + 2)
+        print(f"  HP: rolled 1d{hit_die} ({cls}, Dwarf advantage) → [{roll1}, {roll2}], took {chosen} + CON mod ({con_mod:+d}) + Dwarf +2 = {hp}")
+    else:
+        hp = max(1, roll1 + con_mod)
+        print(f"  HP: rolled 1d{hit_die} ({cls}) → {roll1} + CON mod ({con_mod:+d}) = {hp}")
+    return hp
+
+
+def _llm_generate_name(ancestry: str, gender: str) -> Optional[str]:
+    config = _load_llm_config()
+    provider = config.get("provider", "anthropic")
+    prompt = (
+        f"Generate a single fantasy name for a {gender} {ancestry} character "
+        f"in the Shadowdark RPG setting. Reply with only the name, nothing else."
+    )
+    try:
+        if provider == "anthropic":
+            import anthropic
+            api_key_env = config.get("api_key_env", "ANTHROPIC_API_KEY")
+            api_key = os.environ.get(api_key_env)
+            client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
+            msg = client.messages.create(
+                model=config.get("model", "claude-haiku-4-5-20251001"),
+                max_tokens=32,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return msg.content[0].text.strip()
+        elif provider == "openai_compatible":
+            from openai import OpenAI
+            api_key_env = config.get("api_key_env", "OPENAI_API_KEY")
+            api_key = config.get("api_key") or os.environ.get(api_key_env) or "local"
+            base_url = config.get("base_url")
+            client = OpenAI(api_key=api_key, base_url=base_url) if base_url else OpenAI(api_key=api_key)
+            resp = client.chat.completions.create(
+                model=config.get("model", "gpt-4o-mini"),
+                max_tokens=32,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return resp.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"  LLM error: {e}")
+    return None
+
+
+def create_character() -> Optional[Character]:
+    """Interactive Shadowdark character creation. Returns the new Character or None if aborted."""
+    print("\n=== New Shadowdark Character ===\n")
+    try:
+        # Step 1: Ancestry
+        print("Step 1: Ancestry")
+        ancestry_choice = _prompt_choice("  Ancestry> ", ANCESTRIES + ["Random"])
+        if ancestry_choice == "Random":
+            ancestry = random.choice(ANCESTRIES)
+            print(f"  → Rolled: {ancestry}")
+        else:
+            ancestry = ancestry_choice
+        print(f"  Ancestry: {ancestry}\n")
+
+        # Step 2: Gender + pronouns
+        print("Step 2: Gender")
+        gender_choice = _prompt_choice("  Gender> ", _GENDER_OPTIONS)
+        if gender_choice == "Random":
+            gender = random.choice(["Male", "Female", "Non-binary"])
+            print(f"  → Rolled: {gender}")
+        elif gender_choice == "Freeform":
+            gender = _prompt_freetext("  Enter gender> ")
+        else:
+            gender = gender_choice
+
+        pronouns = _AUTO_PRONOUNS.get(gender.lower())
+        if pronouns is None:
+            print(f"  What pronouns does {gender} use?")
+            pronouns = _prompt_freetext("  Pronouns> ")
+        print(f"  Gender: {gender}  ({pronouns})\n")
+
+        # Step 3: Name
+        print("Step 3: Name  (type 'random' for an LLM-generated name)")
+        name: Optional[str] = None
+        while name is None:
+            raw = _prompt_freetext("  Name> ")
+            if raw.lower() == "random":
+                print("  Asking the LLM for a name...", end="", flush=True)
+                generated = _llm_generate_name(ancestry, gender)
+                if generated is None:
+                    print("\n  LLM unavailable — please enter a name manually.")
+                    continue
+                print(f"\r  Suggested: {generated}             ")
+                while True:
+                    confirm = _prompt_choice("  Accept? > ", ["yes", "no", "custom"])
+                    if confirm == "yes":
+                        name = generated
+                        break
+                    elif confirm == "no":
+                        print("  Asking the LLM for another name...", end="", flush=True)
+                        generated = _llm_generate_name(ancestry, gender)
+                        if generated is None:
+                            print("\n  LLM unavailable — please enter a name manually.")
+                            break
+                        print(f"\r  Suggested: {generated}             ")
+                    else:
+                        name = _prompt_freetext("  Enter custom name> ")
+                        break
+            else:
+                name = raw
+        print(f"  Name: {name}\n")
+
+        # Rolls
+        print("Rolling stats (3d6 each, reroll all if no stat ≥ 14):")
+        stats = _roll_stats()
+
+        print("\nRolling starting gold:")
+        gold = _roll_gold()
+
+        print("\nRolling backstory:")
+        backstory_title, backstory_detail = _roll_backstory()
+
+        # Languages
+        languages: list[str] = ["Common"] + _ANCESTRY_LANGUAGES.get(ancestry, [])
+        print(f"\nLanguages: {', '.join(languages)}")
+        if ancestry == "Human":
+            print("  Humans may add one additional language. Edit your character YAML to add it to the languages list when you have the options.")
+
+        # AC
+        dex_mod = (stats["dex"] - 10) // 2
+        ac_normal = 10 + dex_mod
+        ac_shield = ac_normal + 2
+        print(f"\nAC: {ac_normal} (normal), {ac_shield} (with shield)  [DEX mod: {dex_mod:+d}]")
+
+        # Build and write initial YAML (no class/HP yet)
+        char_data: dict[str, Any] = {
+            "meta": {
+                "name": name,
+                "system": "shadowdark",
+                "ancestry": ancestry,
+                "class": "",
+                "level": 1,
+                "status": "ongoing",
+                "gender": gender,
+                "pronouns": pronouns,
+            },
+            "combat": {
+                "hp": 0,
+                "ac_normal": ac_normal,
+                "ac_shield": ac_shield,
+            },
+            "stats": stats,
+            "gold": gold,
+            "languages": languages,
+            "backstory": backstory_title,
+            "backstory_detail": backstory_detail,
+            "weapons": [],
+            "spells": {},
+            "talents": [],
+            "personality_and_hooks": "",
+            "campaign_context": "",
+        }
+
+        yaml_path = _unique_yaml_path(name)
+        try:
+            with open(yaml_path, "w") as f:
+                yaml.dump(char_data, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+            print(f"\n  Saved to {yaml_path.name}")
+        except OSError as e:
+            print(f"\n  Error writing character file: {e}")
+            return None
+
+        # Step 4: Class
+        print("\nStep 4: Class")
+        class_choice = _prompt_choice("  Class> ", CLASSES + ["Random"])
+        if class_choice == "Random":
+            cls = random.choice(CLASSES)
+            print(f"  → Rolled: {cls}")
+        else:
+            cls = class_choice
+        print(f"  Class: {cls}\n")
+
+        # Roll HP now that class is known
+        print("Rolling HP:")
+        hp = _roll_hp(cls, stats["con"], ancestry)
+
+        # Update YAML with class and HP
+        char_data["meta"]["class"] = cls
+        char_data["combat"]["hp"] = hp
+        try:
+            with open(yaml_path, "w") as f:
+                yaml.dump(char_data, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+        except OSError as e:
+            print(f"\n  Error updating character file: {e}")
+
+        print(f"\n✓ {name} the {ancestry} {cls} is ready!\n")
+        return Character(name=name, source_file=yaml_path, data=char_data)
+
+    except KeyboardInterrupt:
+        print("\n  Character creation cancelled.")
+        return None
 
 
 # ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from systems.character import Character, load_characters
 from systems.star_wars_d6 import StarWarsD6System
-from systems.shadowdark import ShadowdarkSystem
+from systems.shadowdark import ShadowdarkSystem, create_character
 
 SYSTEMS = [
     StarWarsD6System(),
@@ -11,19 +11,22 @@ SYSTEMS = [
 
 def character_menu(system_slug: str):
     """Present character selection for the given system. Returns chosen character or None."""
-    characters = load_characters(system_slug)
-
-    print()
-    options = list(characters)
-    for i, char in enumerate(options, 1):
-        print(f"{i}. {char.name}")
-    new_idx = len(options) + 1
-    none_idx = len(options) + 2
-    print(f"{new_idx}. New  (not yet implemented)")
-    print(f"{none_idx}. None  (raw dice roller)")
-    print("q. Back")
-
     while True:
+        characters = load_characters(system_slug)
+
+        print()
+        options = list(characters)
+        for i, char in enumerate(options, 1):
+            print(f"{i}. {char.name}")
+        new_idx = len(options) + 1
+        none_idx = len(options) + 2
+        if system_slug == "shadowdark":
+            print(f"{new_idx}. Create new character")
+        else:
+            print(f"{new_idx}. New  (not yet implemented)")
+        print(f"{none_idx}. None  (raw dice roller)")
+        print("q. Back")
+
         try:
             choice = input("\nChoose a character: ").strip().lower()
         except (EOFError, KeyboardInterrupt):
@@ -38,12 +41,19 @@ def character_menu(system_slug: str):
             if 1 <= idx <= len(options):
                 return options[idx - 1]
             if idx == new_idx:
-                print("New character creation is not yet implemented.")
-                continue
+                if system_slug == "shadowdark":
+                    char = create_character()
+                    if char is not None:
+                        return char
+                    # creation cancelled — redisplay the menu
+                    continue
+                else:
+                    print("New character creation is not yet implemented for this system.")
+                    continue
             if idx == none_idx:
                 return None
 
-        print(f"Invalid choice.")
+        print("Invalid choice.")
 
 
 def story_menu() -> None:
