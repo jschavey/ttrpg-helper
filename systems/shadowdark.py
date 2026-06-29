@@ -968,6 +968,10 @@ def create_character() -> Optional[Character]:
         ac_shield = ac_normal + 2
         print(f"\nAC: {ac_normal} (normal), {ac_shield} (with shield)  [DEX mod: {dex_mod:+d}]")
 
+        # Equipment slots
+        equipment_slots = max(stats["str"], 10)
+        print(f"\nEquipment slots: {equipment_slots}  (first backpack and first 100 coins are free)")
+
         # Build and write initial YAML (no class/HP yet)
         char_data: dict[str, Any] = {
             "meta": {
@@ -985,6 +989,7 @@ def create_character() -> Optional[Character]:
                 "ac_normal": ac_normal,
                 "ac_shield": ac_shield,
             },
+            "equipment_slots": equipment_slots,
             "stats": stats,
             "gold": gold,
             "languages": languages,

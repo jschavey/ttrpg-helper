@@ -66,6 +66,7 @@ Two schemas exist — each system reads its own:
 **Shadowdark** (`data/shadowdark/*.yaml`) — see `urist.yaml` for a full example:
 - `meta` — name, system, ancestry, class, level, `status: "finished" | "ongoing"` (story menu grouping; defaults to `"ongoing"`)
 - `combat` — hp, ac_normal, ac_shield
+- `equipment_slots` — `max(STR, 10)`; first backpack and first 100 coins are free and don't count
 - `stats` — str/dex/con/int/wis/cha
 - `weapons` *(optional)* — list of `{name, type: melee|ranged, throwable?: bool}`; required for `att` command; omitting the key is safe
 - `spells` — dict of tier lists (`tier_1: [...]`); consumed by `cast` autocomplete
