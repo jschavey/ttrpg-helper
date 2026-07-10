@@ -76,3 +76,12 @@ class TestRoll:
             result = roll("2D")
         assert "COMPLICATION" in result.flags
         assert "EXPLODE" not in result.flags
+
+    def test_chained_explosion(self):
+        # wild die = 6 -> reroll = 6 -> reroll = 3; two extra explosion rolls
+        with patch("systems.star_wars_d6.random.randint", side_effect=[6, 6, 3, 4]):
+            result = roll("2D")
+        assert result.exploded
+        # rolls: [6, 6, 3, 4] (special + 2 explosion rolls + 1 regular die)
+        assert result.rolls == [6, 6, 3, 4]
+        assert result.total == 19

@@ -69,9 +69,10 @@ def roll(notation: str) -> Optional[RollResult]:
         if i == 0:
             special_first = die
             rolls.append(die)
-            if die == 6:
+            while die == 6:
                 exploded = True
-                rolls.append(random.randint(1, 6))
+                die = random.randint(1, 6)
+                rolls.append(die)
         else:
             rolls.append(die)
 
@@ -85,18 +86,29 @@ def roll(notation: str) -> Optional[RollResult]:
 
 
 def print_result(notation: str, result: RollResult) -> None:
+    parsed = parse_notation(notation)
+    num_dice = parsed[0] if parsed else 1
+    # explosion rolls are the extra rolls appended after the special die (index 0)
+    explosion_count = len(result.rolls) - num_dice if result.exploded else 0
+
     print(f"\nRolling {notation}:")
+    explosion_rolls_printed = 0
+    regular_die_index = 1  # display index for non-special dice
+
     for i, die_val in enumerate(result.rolls):
         if i == 0:
-            label = "Die 1 (special)"
-            if result.exploded and len(result.rolls) > 1:
-                print(f"  {label}: {die_val} -> EXPLODES! Bonus roll: {result.rolls[1]}")
-                continue
-            print(f"  {label}: {die_val}")
-        elif i == 1 and result.exploded:
-            continue
+            if result.exploded:
+                print(f"  Die 1 (special): {die_val} -> EXPLODES!")
+            else:
+                print(f"  Die 1 (special): {die_val}")
+        elif result.exploded and explosion_rolls_printed < explosion_count:
+            is_another_explode = explosion_rolls_printed < explosion_count - 1
+            suffix = " -> EXPLODES!" if is_another_explode else ""
+            print(f"    Explosion roll {explosion_rolls_printed + 1}: {die_val}{suffix}")
+            explosion_rolls_printed += 1
         else:
-            print(f"  Die {i + 1}: {die_val}")
+            print(f"  Die {regular_die_index + 1}: {die_val}")
+            regular_die_index += 1
 
     flag_str = "  [" + " | ".join(result.flags) + "]" if result.flags else ""
     dice_sum = sum(result.rolls)
