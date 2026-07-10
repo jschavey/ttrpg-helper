@@ -24,3 +24,6 @@ env/
 # LLM config (may contain API keys)
 llm_config.yaml
 data/.DS_Store
+
+# AI narrator output (kept locally, not committed)
+data/narrations/

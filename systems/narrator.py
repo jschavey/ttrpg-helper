@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+import re
 import time
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +12,7 @@ import yaml
 from systems.character import Character
 
 CONFIG_PATH = Path(__file__).parent.parent / "llm_config.yaml"
+NARRATIONS_DIR = Path(__file__).parent.parent / "data" / "narrations"
 
 SYSTEM_PROMPT = """\
 You are a masterful narrator with a gift for cinematic prose, equally at home in \
@@ -70,6 +73,28 @@ def _build_user_prompt(character: Character) -> str:
     return f"Character sheet and campaign notes:\n\n```yaml\n{char_yaml}```"
 
 
+def _slugify(text: str) -> str:
+    slug = text.lower().strip()
+    slug = re.sub(r"[^a-z0-9\s-]", "", slug)
+    slug = re.sub(r"\s+", "-", slug)
+    return slug
+
+
+def _save_narration(character: Character, model: str, text: str) -> Path | None:
+    if not text.strip():
+        return None
+    NARRATIONS_DIR.mkdir(parents=True, exist_ok=True)
+    stamp = date.today().isoformat()
+    filename = f"{_slugify(character.name)}-{stamp}-{_slugify(model)}.md"
+    path = NARRATIONS_DIR / filename
+    try:
+        path.write_text(text)
+    except OSError as e:
+        print(f"\n[Narrator] Could not save narration: {e}")
+        return None
+    return path
+
+
 def _print_connection_error(endpoint: str | None, exc: Exception) -> None:
     label = endpoint or "the API endpoint"
     print(f"\n[Narrator unavailable] Could not reach {label}.")
@@ -79,17 +104,18 @@ def _print_connection_error(endpoint: str | None, exc: Exception) -> None:
     print("Check that your LLM server is running and a model is loaded, then try again.")
 
 
-def _stream_anthropic(config: dict[str, Any], user_prompt: str) -> None:
+def _stream_anthropic(config: dict[str, Any], user_prompt: str) -> str:
     try:
         import anthropic
     except ImportError:
         print("The 'anthropic' package is required. Run: .venv/bin/pip install anthropic")
-        return
+        return ""
 
     api_key_env = config.get("api_key_env", "ANTHROPIC_API_KEY")
     api_key = os.environ.get(api_key_env)
     client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
 
+    full_text = ""
     try:
         t0 = time.monotonic()
         with client.messages.stream(
@@ -100,20 +126,22 @@ def _stream_anthropic(config: dict[str, Any], user_prompt: str) -> None:
         ) as stream:
             for text in stream.text_stream:
                 print(text, end="", flush=True)
+                full_text += text
             final = stream.get_final_message()
         elapsed = time.monotonic() - t0
         out_tokens = final.usage.output_tokens
         print(f"\n\n--- {elapsed:.1f}s | {out_tokens} tokens | {out_tokens / elapsed:.1f} tok/s ---")
     except Exception as e:
         _print_connection_error("Anthropic API", e)
+    return full_text
 
 
-def _stream_openai_compatible(config: dict[str, Any], user_prompt: str) -> None:
+def _stream_openai_compatible(config: dict[str, Any], user_prompt: str) -> str:
     try:
         from openai import OpenAI
     except ImportError:
         print("The 'openai' package is required. Run: .venv/bin/pip install openai")
-        return
+        return ""
 
     api_key_env = config.get("api_key_env", "OPENAI_API_KEY")
     api_key = config.get("api_key") or os.environ.get(api_key_env) or "local"
@@ -121,6 +149,7 @@ def _stream_openai_compatible(config: dict[str, Any], user_prompt: str) -> None:
 
     client = OpenAI(api_key=api_key, base_url=base_url) if base_url else OpenAI(api_key=api_key)
 
+    full_text = ""
     try:
         t0 = time.monotonic()
         token_count = 0
@@ -139,6 +168,7 @@ def _stream_openai_compatible(config: dict[str, Any], user_prompt: str) -> None:
                 delta = chunk.choices[0].delta.content
                 if delta:
                     print(delta, end="", flush=True)
+                    full_text += delta
             if chunk.usage:
                 token_count = chunk.usage.completion_tokens
         elapsed = time.monotonic() - t0
@@ -146,19 +176,27 @@ def _stream_openai_compatible(config: dict[str, Any], user_prompt: str) -> None:
         print(f"\n\n--- {elapsed:.1f}s | {token_count} tokens | {tps:.1f} tok/s ---")
     except Exception as e:
         _print_connection_error(base_url, e)
+    return full_text
 
 
 def narrate(character: Character) -> None:
     config = _load_config()
     provider = config.get("provider", "anthropic")
+    model = config.get("model", "?")
 
-    print(f"\n--- Summoning the narrator ({config.get('model', '?')}) ---\n")
+    print(f"\n--- Summoning the narrator ({model}) ---\n")
 
     user_prompt = _build_user_prompt(character)
 
+    full_text = ""
     if provider == "anthropic":
-        _stream_anthropic(config, user_prompt)
+        full_text = _stream_anthropic(config, user_prompt)
     elif provider == "openai_compatible":
-        _stream_openai_compatible(config, user_prompt)
+        full_text = _stream_openai_compatible(config, user_prompt)
     else:
         print(f"Unknown provider '{provider}'. Check llm_config.yaml.")
+        return
+
+    saved_path = _save_narration(character, model, full_text)
+    if saved_path:
+        print(f"\n[Narrator] Saved to {saved_path.relative_to(saved_path.parent.parent.parent)}")
