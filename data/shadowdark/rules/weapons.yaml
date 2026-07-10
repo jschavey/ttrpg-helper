@@ -1,0 +1,107 @@
+# Shadowdark weapons reference table (Player's Handbook, p. XX)
+# Properties:
+#   finesse    - Use STR or DEX
+#   loading    - Must forgo move to reload
+#   thrown     - Can throw using STR or DEX
+#   two_handed - Requires both hands
+#   versatile  - Higher damage with two hands (use damage_two_handed)
+weapons:
+  - name: Dagger
+    cost: "1 gp"
+    type: [melee, ranged]
+    range: [close, near]
+    damage: "1d4"
+    properties: [finesse, thrown]
+
+  - name: Club
+    cost: "5 cp"
+    type: [melee]
+    range: [close]
+    damage: "1d4"
+    properties: []
+
+  - name: Shortsword
+    cost: "7 gp"
+    type: [melee]
+    range: [close]
+    damage: "1d6"
+    properties: []
+
+  - name: Longsword
+    cost: "9 gp"
+    type: [melee]
+    range: [close]
+    damage: "1d8"
+    properties: []
+
+  - name: Mace
+    cost: "5 gp"
+    type: [melee]
+    range: [close]
+    damage: "1d6"
+    properties: []
+
+  - name: Warhammer
+    cost: "10 gp"
+    type: [melee]
+    range: [close]
+    damage: "1d10"
+    properties: [two_handed]
+
+  - name: Spear
+    cost: "5 sp"
+    type: [melee, ranged]
+    range: [close, near]
+    damage: "1d6"
+    properties: [thrown]
+
+  - name: Staff
+    cost: "5 sp"
+    type: [melee]
+    range: [close]
+    damage: "1d4"
+    properties: [two_handed]
+
+  - name: Bastard sword
+    cost: "10 gp"
+    type: [melee]
+    range: [close]
+    damage: "1d8"
+    damage_two_handed: "1d10"
+    properties: [versatile]
+
+  - name: Greatsword
+    cost: "12 gp"
+    type: [melee]
+    range: [close]
+    damage: "1d12"
+    properties: [two_handed]
+
+  - name: Greataxe
+    cost: "10 gp"
+    type: [melee]
+    range: [close]
+    damage: "1d8"
+    damage_two_handed: "1d10"
+    properties: [versatile]
+
+  - name: Shortbow
+    cost: "6 gp"
+    type: [ranged]
+    range: [far]
+    damage: "1d4"
+    properties: [two_handed]
+
+  - name: Longbow
+    cost: "8 gp"
+    type: [ranged]
+    range: [far]
+    damage: "1d8"
+    properties: [two_handed]
+
+  - name: Crossbow
+    cost: "8 gp"
+    type: [ranged]
+    range: [far]
+    damage: "1d6"
+    properties: [two_handed, loading]

@@ -611,6 +611,13 @@ def print_result(notation: str, result: ShadowdarkRollResult) -> None:
 
 _DATA_DIR = Path(__file__).parent.parent / "data"
 _LLM_CONFIG_PATH = Path(__file__).parent.parent / "llm_config.yaml"
+_WEAPONS_FILE = _DATA_DIR / "shadowdark" / "rules" / "weapons.yaml"
+
+
+def load_weapons() -> list[dict]:
+    """Return the full Shadowdark weapons table."""
+    with open(_WEAPONS_FILE) as f:
+        return yaml.safe_load(f)["weapons"]
 
 ANCESTRIES = ["Human", "Elf", "Dwarf", "Halfling", "Half-Orc"]
 CLASSES = ["Fighter", "Priest", "Thief", "Wizard"]
@@ -946,6 +953,17 @@ def create_character() -> Optional[Character]:
                 name = raw
         print(f"  Name: {name}\n")
 
+        # Step 4: Level
+        print("Step 4: Level  (enter 0 for a zero-level character)")
+        level: int = -1
+        while level < 0:
+            raw_level = _prompt_freetext("  Level> ").strip()
+            if raw_level.isdigit():
+                level = int(raw_level)
+            else:
+                print("  Please enter a non-negative integer.")
+        print(f"  Level: {level}\n")
+
         # Rolls
         print("Rolling stats (3d6 each, reroll all if no stat ≥ 14):")
         stats = _roll_stats()
@@ -972,20 +990,51 @@ def create_character() -> Optional[Character]:
         equipment_slots = max(stats["str"], 10)
         print(f"\nEquipment slots: {equipment_slots}  (first backpack and first 100 coins are free)")
 
-        # Build and write initial YAML (no class/HP yet)
+        # Step 5: Class (skipped for level 0) and HP
+        _ALIGNMENTS = ["Lawful", "Neutral", "Chaotic"]
+        con_mod = (stats["con"] - 10) // 2
+        if level == 0:
+            cls = ""
+            hp = max(1, 1 + con_mod)
+            print(f"\nHP (level 0): 1 + CON mod ({con_mod:+d}) = {hp}")
+        else:
+            print("\nStep 5: Class")
+            class_choice = _prompt_choice("  Class> ", CLASSES + ["Random"])
+            if class_choice == "Random":
+                cls = random.choice(CLASSES)
+                print(f"  → Rolled: {cls}")
+            else:
+                cls = class_choice
+            print(f"  Class: {cls}\n")
+
+            print("Rolling HP:")
+            hp = _roll_hp(cls, stats["con"], ancestry)
+
+        # Alignment
+        print("\nAlignment")
+        align_choice = _prompt_choice("  Alignment> ", _ALIGNMENTS + ["Random"])
+        if align_choice == "Random":
+            alignment = random.choice(_ALIGNMENTS)
+            print(f"  → Rolled: {alignment}")
+        else:
+            alignment = align_choice
+        print(f"  Alignment: {alignment}")
+
+        # Build and write YAML
         char_data: dict[str, Any] = {
             "meta": {
                 "name": name,
                 "system": "shadowdark",
                 "ancestry": ancestry,
-                "class": "",
-                "level": 1,
+                "class": cls,
+                "level": level,
+                "alignment": alignment,
                 "status": "ongoing",
                 "gender": gender,
                 "pronouns": pronouns,
             },
             "combat": {
-                "hp": 0,
+                "hp": hp,
                 "ac_normal": ac_normal,
                 "ac_shield": ac_shield,
             },
@@ -1011,30 +1060,10 @@ def create_character() -> Optional[Character]:
             print(f"\n  Error writing character file: {e}")
             return None
 
-        # Step 4: Class
-        print("\nStep 4: Class")
-        class_choice = _prompt_choice("  Class> ", CLASSES + ["Random"])
-        if class_choice == "Random":
-            cls = random.choice(CLASSES)
-            print(f"  → Rolled: {cls}")
+        if level == 0:
+            print(f"\n✓ {name} the {ancestry} (level 0, {alignment}) is ready!\n")
         else:
-            cls = class_choice
-        print(f"  Class: {cls}\n")
-
-        # Roll HP now that class is known
-        print("Rolling HP:")
-        hp = _roll_hp(cls, stats["con"], ancestry)
-
-        # Update YAML with class and HP
-        char_data["meta"]["class"] = cls
-        char_data["combat"]["hp"] = hp
-        try:
-            with open(yaml_path, "w") as f:
-                yaml.dump(char_data, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
-        except OSError as e:
-            print(f"\n  Error updating character file: {e}")
-
-        print(f"\n✓ {name} the {ancestry} {cls} is ready!\n")
+            print(f"\n✓ {name} the {ancestry} {cls} (level {level}, {alignment}) is ready!\n")
         return Character(name=name, source_file=yaml_path, data=char_data)
 
     except KeyboardInterrupt:
