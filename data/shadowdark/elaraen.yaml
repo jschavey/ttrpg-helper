@@ -1,0 +1,32 @@
+meta:
+  name: Elaraen
+  system: shadowdark
+  ancestry: Human
+  class: ''
+  level: 0
+  alignment: Neutral
+  status: ongoing
+  gender: Non-binary
+  pronouns: they/them
+combat:
+  hp: 1
+  ac_normal: 13
+  ac_shield: 15
+equipment_slots: 10
+stats:
+  str: 3
+  dex: 16
+  con: 6
+  int: 13
+  wis: 11
+  cha: 14
+gold: 40
+languages:
+- Common
+backstory: Sailor
+backstory_detail: Pirate, privateer, or merchant — the seas are yours
+weapons: [club]
+spells: {}
+talents: []
+personality_and_hooks: ''
+campaign_context: ''
