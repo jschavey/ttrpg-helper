@@ -1,0 +1,34 @@
+meta:
+  name: Kaelen Vane
+  system: shadowdark
+  ancestry: Human
+  class: 'Wizard'
+  level: 1
+  alignment: Lawful
+  status: ongoing
+  gender: Non-binary
+  pronouns: they/them
+combat:
+  hp: 7
+  ac_normal: 9
+  ac_shield: 14
+equipment_slots: 10
+stats:
+  str: 9
+  dex: 9
+  con: 14
+  int: 17
+  wis: 7
+  cha: 10
+gold: 40
+languages:
+- Common
+backstory: Urchin
+backstory_detail: You grew up in the merciless streets of a large city
+weapons: [grappling hook]
+items: [torch, torch, torch]
+spells: {burning hands, mage armor, feather fall}
+talents: [gain advantage on casting one spell that I know,
+          gain advantage on a second spell]
+personality_and_hooks: ''
+campaign_context: ''

@@ -1,0 +1,32 @@
+meta:
+  name: Elara
+  system: shadowdark
+  ancestry: Human
+  class: ''
+  level: 0
+  alignment: Neutral
+  status: finished
+  gender: Female
+  pronouns: she/her
+combat:
+  hp: 2
+  ac_normal: 11
+  ac_shield: 13
+equipment_slots: 14
+stats:
+  str: 14
+  dex: 11
+  con: 11
+  int: 11
+  wis: 9
+  cha: 12
+gold: 40
+languages:
+- Common
+backstory: Banished
+backstory_detail: 
+weapons: []
+spells: {}
+talents: []
+personality_and_hooks: ''
+campaign_context: ''

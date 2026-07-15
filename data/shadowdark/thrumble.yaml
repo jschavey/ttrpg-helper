@@ -1,0 +1,33 @@
+meta:
+  name: Thrumble
+  system: shadowdark
+  ancestry: Dwarf
+  class: ''
+  level: 0
+  alignment: Chaotic
+  status: finished
+  gender: Non-binary
+  pronouns: they/them
+combat:
+  hp: 1
+  ac_normal: 10
+  ac_shield: 12
+equipment_slots: 14
+stats:
+  str: 14
+  dex: 10
+  con: 7
+  int: 9
+  wis: 8
+  cha: 9
+gold: 40
+languages:
+- Common
+- Dwarvish
+backstory: Thieve's Guild
+backstory_detail: You have connections, contacts, and debts
+weapons: []
+spells: {}
+talents: []
+personality_and_hooks: ''
+campaign_context: ''

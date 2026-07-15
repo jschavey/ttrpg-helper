@@ -5,7 +5,7 @@ meta:
   class: ''
   level: 0
   alignment: Neutral
-  status: ongoing
+  status: finished
   gender: Non-binary
   pronouns: they/them
 combat:
@@ -26,6 +26,7 @@ languages:
 backstory: Sailor
 backstory_detail: Pirate, privateer, or merchant — the seas are yours
 weapons: [club]
+items: [torch]
 spells: {}
 talents: []
 personality_and_hooks: ''

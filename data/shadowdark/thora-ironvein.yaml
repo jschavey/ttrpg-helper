@@ -1,0 +1,32 @@
+meta:
+  name: Thora Ironvein
+  system: shadowdark
+  ancestry: Dwarf
+  class: Fighter
+  level: 1
+  status: finished
+  gender: Female
+  pronouns: she/her
+combat:
+  hp: 8
+  ac_normal: 10
+  ac_shield: 12
+equipment_slots: 13
+stats:
+  str: 13
+  dex: 10
+  con: 11
+  int: 8
+  wis: 14
+  cha: 7
+gold: 40
+languages:
+- Common
+- Dwarvish
+backstory: Scout
+backstory_detail: You survived on stealth, observation, and speed
+weapons: []
+spells: {}
+talents: []
+personality_and_hooks: ''
+campaign_context: ''
