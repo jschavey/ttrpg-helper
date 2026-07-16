@@ -27,3 +27,4 @@ data/.DS_Store
 
 # AI narrator output (kept locally, not committed)
 data/narrations/
+data/shadowdark/.DS_Store
