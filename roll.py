@@ -56,6 +56,32 @@ def character_menu(system_slug: str):
         print("Invalid choice.")
 
 
+def _choose_model() -> str | None:
+    """Present a numbered menu of narrator models. Returns the chosen model id, or None for the default."""
+    from systems.narrator import get_model_choices
+
+    choices = get_model_choices()
+    if len(choices) <= 1:
+        return None
+
+    print()
+    for i, choice in enumerate(choices, 1):
+        print(f"{i}. {choice['name']}")
+
+    try:
+        selection = input("\nChoose a model: ").strip()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        return None
+
+    if selection.isdigit():
+        idx = int(selection)
+        if 1 <= idx <= len(choices):
+            return choices[idx - 1]["model"]
+
+    return choices[0]["model"]
+
+
 def story_menu() -> None:
     """Present character selection for story narration, grouped by status and system."""
     from systems.narrator import narrate
@@ -114,8 +140,9 @@ def story_menu() -> None:
             i = int(choice)
             if 1 <= i <= len(options):
                 _, char = options[i - 1]
+                model = _choose_model()
                 try:
-                    narrate(char)
+                    narrate(char, model=model)
                 except KeyboardInterrupt:
                     print("\n(narration interrupted)")
                 input("\nPress Enter to continue...")

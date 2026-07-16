@@ -8,9 +8,16 @@
 
 # --- LM Studio (or any OpenAI-compatible endpoint) ---
 provider: "openai_compatible"
-model: "google/gemma-4-26b-a4b-qat"
 base_url: "http://localhost:1234/v1"
 api_key: "your-lm-studio-token-here"
+
+# Optionally offer a numbered menu of models before narrating; first entry
+# is the default. Omit this key to always use a single top-level `model:`.
+models:
+  - name: "Qwen3.6 35B"
+    model: "qwen/qwen3.6-35b-a3b"
+  - name: "Gemma 4 31B"
+    model: "google/gemma-4-31b"
 
 # Optional tuning for openai_compatible:
 # max_tokens: 64               # response budget; names are short

@@ -102,6 +102,19 @@ def _load_config() -> dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
+def _model_choices(config: dict[str, Any]) -> list[dict[str, str]]:
+    """Named model options from config['models'], falling back to the single top-level model."""
+    models = config.get("models")
+    if models:
+        return models
+    return [{"name": config.get("model", "default"), "model": config.get("model", "")}]
+
+
+def get_model_choices() -> list[dict[str, str]]:
+    """Named model options for presenting a menu, e.g. [{"name": "Qwen", "model": "qwen/..."}]."""
+    return _model_choices(_load_config())
+
+
 def _find_session_field(data: dict[str, Any]) -> str | None:
     for key, val in data.items():
         if isinstance(val, str) and SESSION_HEADER_RE.search(val):
@@ -298,10 +311,12 @@ def _last_paragraph(text: str) -> str:
     return paragraphs[-1] if paragraphs else ""
 
 
-def narrate(character: Character) -> None:
+def narrate(character: Character, model: str | None = None) -> None:
     config = _load_config()
+    if model is None:
+        model = _model_choices(config)[0]["model"]
+    config = {**config, "model": model}
     provider = config.get("provider", "anthropic")
-    model = config.get("model", "?")
 
     session_field = _find_session_field(character.data)
     if session_field is None:
