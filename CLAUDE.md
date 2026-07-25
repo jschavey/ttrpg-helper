@@ -70,7 +70,9 @@ Two schemas exist — each system reads its own:
 - `stats` — str/dex/con/int/wis/cha
 - `weapons` *(optional)* — list of `{name, type: melee|ranged, throwable?: bool}`; required for `att` command; omitting the key is safe
 - `spells` — dict of tier lists (`tier_1: [...]`); consumed by `cast` autocomplete
-- `talents` — list of strings; `"+1 to priest spellcasting checks"` is the only talent text currently parsed
+- `talents` — list of entries, each either a plain string (freeform, narrator-only) or a dict with a `text` key plus optional structured fields:
+  - `"+1 to priest spellcasting checks"` is the only plain-string talent text currently parsed
+  - `advantage_spell: <spell name>` — grants advantage whenever that named spell is cast via the `cast` command (see `get_spell_advantage_talent` in `systems/shadowdark.py`); an explicit `d` flag on the `cast` command cancels this back to a flat roll rather than stacking into disadvantage
 - `personality_and_hooks`, `campaign_context` — freeform text consumed by the narrator
 
 **Star Wars D6 WEG** (`data/star-wars-d6/*.yaml`) — see `C4V3.yaml` for a full example:

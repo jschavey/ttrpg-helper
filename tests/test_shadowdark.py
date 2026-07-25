@@ -4,6 +4,7 @@ from systems.shadowdark import (
     parse_notation, roll, ShadowdarkRollResult,
     check, CheckResult,
     cast, CastResult, get_character_spells, _parse_cast_args,
+    get_spell_advantage_talent, print_cast_result,
     _CommandCompleter,
     AttackResult, parse_attack, roll_attack,
 )
@@ -347,6 +348,131 @@ class TestCast:
             result = cast("Cure Wounds", char, situational=2)
         mod_sum = sum(v for _, v in result.modifiers)
         assert result.total == result.die_roll + mod_sum
+
+
+class TestSpellAdvantageTalent:
+    """Structured talent entries: {text, advantage_spell} grant advantage on one named spell."""
+
+    def test_finds_matching_talent(self):
+        char = _make_character(
+            talents=[{"text": "Gain advantage on casting one spell you know", "advantage_spell": "Feather Fall"}],
+        )
+        assert get_spell_advantage_talent("Feather Fall", char) == "Gain advantage on casting one spell you know"
+
+    def test_case_insensitive_spell_match(self):
+        char = _make_character(
+            talents=[{"text": "Gain advantage on a second spell", "advantage_spell": "Mage Armor"}],
+        )
+        assert get_spell_advantage_talent("mage armor", char) is not None
+
+    def test_no_match_for_other_spell(self):
+        char = _make_character(
+            talents=[{"text": "Gain advantage on a second spell", "advantage_spell": "Mage Armor"}],
+        )
+        assert get_spell_advantage_talent("Burning Hands", char) is None
+
+    def test_plain_string_talents_are_ignored(self):
+        char = _make_character(talents=["+1 to priest spellcasting checks"])
+        assert get_spell_advantage_talent("Cure Wounds", char) is None
+
+    def test_mixed_string_and_dict_talents(self):
+        char = _make_character(
+            talents=[
+                "+1 to priest spellcasting checks",
+                {"text": "Gain advantage on a second spell", "advantage_spell": "Mage Armor"},
+            ],
+        )
+        assert get_spell_advantage_talent("Mage Armor", char) is not None
+        assert get_spell_advantage_talent("Cure Wounds", char) is None
+
+
+class TestCastSpellAdvantageTalent:
+    """cast() should auto-apply advantage when a talent names the spell being cast."""
+
+    def test_auto_advantage_for_named_spell(self):
+        char = _make_character(
+            stats={"int": 12},
+            meta={"class": "Wizard"},
+            talents=[{"text": "Gain advantage on casting one spell you know", "advantage_spell": "Feather Fall"}],
+        )
+        result = cast("Feather Fall", char)
+        assert result.advantage is True
+        assert result.advantage_reason == "Gain advantage on casting one spell you know"
+        assert result.alt_die_roll is not None
+
+    def test_no_advantage_for_other_spell(self):
+        char = _make_character(
+            stats={"int": 12},
+            meta={"class": "Wizard"},
+            talents=[{"text": "Gain advantage on casting one spell you know", "advantage_spell": "Feather Fall"}],
+        )
+        result = cast("Burning Hands", char)
+        assert result.advantage is None
+        assert result.advantage_reason is None
+
+    def test_explicit_advantage_keeps_reason(self):
+        char = _make_character(
+            stats={"int": 12},
+            meta={"class": "Wizard"},
+            talents=[{"text": "Gain advantage on casting one spell you know", "advantage_spell": "Feather Fall"}],
+        )
+        result = cast("Feather Fall", char, advantage=True)
+        assert result.advantage is True
+        assert result.advantage_reason == "Gain advantage on casting one spell you know"
+
+    def test_explicit_disadvantage_cancels_talent_advantage(self):
+        char = _make_character(
+            stats={"int": 12},
+            meta={"class": "Wizard"},
+            talents=[{"text": "Gain advantage on casting one spell you know", "advantage_spell": "Feather Fall"}],
+        )
+        result = cast("Feather Fall", char, advantage=False)
+        assert result.advantage is None
+        assert result.advantage_reason is None
+        assert result.alt_die_roll is None
+
+    def test_case_insensitive_spell_name(self):
+        char = _make_character(
+            stats={"int": 12},
+            meta={"class": "Wizard"},
+            talents=[{"text": "Gain advantage on a second spell", "advantage_spell": "Mage Armor"}],
+        )
+        result = cast("mage armor", char)
+        assert result.advantage is True
+
+
+class TestPrintCastResultAdvantageAudit:
+    """The printed audit table should surface why a roll got advantage."""
+
+    def test_talent_advantage_shows_reason_in_header(self, capsys):
+        char = _make_character(
+            stats={"int": 12},
+            meta={"class": "Wizard"},
+            talents=[{"text": "Gain advantage on a second spell", "advantage_spell": "Mage Armor"}],
+        )
+        result = cast("Mage Armor", char)
+        print_cast_result(result)
+        out = capsys.readouterr().out
+        assert "advantage — talent: Gain advantage on a second spell" in out
+
+    def test_talent_advantage_shows_reason_in_audit_body(self, capsys):
+        char = _make_character(
+            stats={"int": 12},
+            meta={"class": "Wizard"},
+            talents=[{"text": "Gain advantage on a second spell", "advantage_spell": "Mage Armor"}],
+        )
+        result = cast("Mage Armor", char)
+        print_cast_result(result)
+        out = capsys.readouterr().out
+        assert "Advantage granted by talent: Gain advantage on a second spell" in out
+
+    def test_plain_advantage_has_no_talent_reason(self, capsys):
+        char = _make_character(stats={"int": 12}, meta={"class": "Wizard"})
+        result = cast("Burning Hands", char, advantage=True)
+        print_cast_result(result)
+        out = capsys.readouterr().out
+        assert "(advantage)" in out
+        assert "talent:" not in out
 
 
 class TestInitiative:
