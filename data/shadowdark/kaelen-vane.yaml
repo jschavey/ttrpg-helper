@@ -34,8 +34,11 @@ spells:
     - "Burning Hands"
     - "Mage Armor"
     - "Feather Fall"
-talents: [gain advantage on casting one spell that I know,
-          gain advantage on a second spell]
+talents:
+  - text: Gain advantage on casting one spell that you know
+    advantage_spell: Feather Fall
+  - text: Gain advantage on a second spell
+    advantage_spell: Mage Armor
 personality_and_hooks: ''
 campaign_context: |
   Session 1:

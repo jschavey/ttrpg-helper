@@ -56,6 +56,38 @@ _SPELLCASTING_TALENT: dict[str, str] = {
 
 
 # ---------------------------------------------------------------------------
+# Talents
+# ---------------------------------------------------------------------------
+#
+# A talent entry is either a plain string (freeform, narrator-only text) or a
+# dict with a "text" key plus optional structured fields. The only structured
+# field currently recognised is "advantage_spell": the name of a spell that
+# this talent grants advantage on when cast.
+
+def _talent_text(talent: Any) -> str:
+    if isinstance(talent, dict):
+        return str(talent.get("text", ""))
+    return str(talent)
+
+
+def _talent_advantage_spell(talent: Any) -> Optional[str]:
+    if isinstance(talent, dict):
+        spell = talent.get("advantage_spell")
+        return str(spell) if spell else None
+    return None
+
+
+def get_spell_advantage_talent(spell_name: str, character: "Character") -> Optional[str]:
+    """Return the talent text granting advantage on this spell, or None."""
+    talents: list = character.data.get("talents", [])
+    for talent in talents:
+        adv_spell = _talent_advantage_spell(talent)
+        if adv_spell and adv_spell.lower() == spell_name.lower():
+            return _talent_text(talent)
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Check
 # ---------------------------------------------------------------------------
 
@@ -154,6 +186,7 @@ class CastResult:
     modifiers: list[tuple[str, int]]
     advantage: Optional[bool]
     alt_die_roll: Optional[int]
+    advantage_reason: Optional[str] = None
 
     @property
     def total(self) -> int:
@@ -200,10 +233,10 @@ def cast(
         stat_mod = (stat_value - 10) // 2
         modifiers.append((f"{stat_key.upper()} {stat_value:+d}", stat_mod))
 
-        talent_text = _SPELLCASTING_TALENT.get(cls)
-        if talent_text:
-            talents: list[str] = character.data.get("talents", [])
-            bonus = sum(1 for t in talents if talent_text in t.lower())
+        bonus_talent_text = _SPELLCASTING_TALENT.get(cls)
+        if bonus_talent_text:
+            talents: list = character.data.get("talents", [])
+            bonus = sum(1 for t in talents if bonus_talent_text in _talent_text(t).lower())
             if bonus:
                 modifiers.append(("Talent bonus", bonus))
 
@@ -211,17 +244,34 @@ def cast(
         label = f"Situational {situational:+d}"
         modifiers.append((label, situational))
 
+    advantage_reason = get_spell_advantage_talent(spell_name, character)
+    if advantage_reason is not None:
+        if advantage is False:
+            # Explicit disadvantage cancels the talent's advantage: roll flat.
+            advantage = None
+            advantage_reason = None
+        else:
+            advantage = True
+
     return CastResult(
         spell_name=spell_name,
         die_roll=random.randint(1, 20),
         modifiers=modifiers,
         advantage=advantage,
         alt_die_roll=random.randint(1, 20) if advantage is not None else None,
+        advantage_reason=advantage_reason,
     )
 
 
 def print_cast_result(result: CastResult) -> None:
-    adv_label = " (advantage)" if result.advantage is True else " (disadvantage)" if result.advantage is False else ""
+    if result.advantage is True and result.advantage_reason:
+        adv_label = f" (advantage — talent: {result.advantage_reason})"
+    elif result.advantage is True:
+        adv_label = " (advantage)"
+    elif result.advantage is False:
+        adv_label = " (disadvantage)"
+    else:
+        adv_label = ""
     print(f"\nCast: {result.spell_name}{adv_label}")
     col = 20
     if result.advantage is None:
@@ -234,6 +284,8 @@ def print_cast_result(result: CastResult) -> None:
         print(f"  {'─' * col}  ─────")
         print(f"  {'Total':<{col}}  {result.total}")
     else:
+        if result.advantage_reason:
+            print(f"  Advantage granted by talent: {result.advantage_reason}")
         _print_d20_roll_block("[Roll 1]", result.die_roll, result.modifiers, col)
         _print_d20_roll_block("[Roll 2]", result.alt_die_roll or 0, result.modifiers, col)
         rule = "higher" if result.advantage else "lower"
