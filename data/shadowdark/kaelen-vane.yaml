@@ -21,14 +21,116 @@ stats:
   wis: 7
   cha: 10
 gold: 40
+xp: 3
 languages:
 - Common
 backstory: Urchin
 backstory_detail: You grew up in the merciless streets of a large city
-weapons: [grappling hook]
-items: [torch, torch, torch]
-spells: {burning hands, mage armor, feather fall}
+weapons: [grappling hook, club]
+items: [torch, torch, torch, canteen of water]
+home_storage: [100 silver, 5 gems of different sizes of ruby, s worth 10G, 50G, 100G, 100G, 200G, small sack of 35G and 2Gems worth 100g]
+spells: 
+  tier_1:
+    - "Burning Hands"
+    - "Mage Armor"
+    - "Feather Fall"
 talents: [gain advantage on casting one spell that I know,
           gain advantage on a second spell]
 personality_and_hooks: ''
-campaign_context: ''
+campaign_context: |
+  Session 1:
+    - Alric's light spell fails
+    - we discuss just hanging out, but after some time I light a torch
+    - and we go down the stairs
+    - head on thru the door and down the hall way
+    - and down another hallway 70ft
+    - we come to another door
+    - has a strange symbol next to it
+    - I poke the symbol and there's grinding behind it
+    - and it opens into a 50ft cooridor
+    - Ronnick and  Kaelen will stay in side and Alric will stay outside
+    - we  push another bsymbol at the other side and it rotates the hallway
+    - we pick back up alric
+    - zargon written on wallas in a room beyond a second symbol
+    - ronnick trips a trap and almost goes through a slide
+    - we check out another room again no lock
+    - yellow fungus on dusty crates 
+    - alric triggers a trap which locks the door and water starts filling
+    - i open a secret door and it's a tiny room and its still fillilng
+    - another door, drain in there
+    - large whicker basket on the drawer
+    - alric starts coughing and hacking from the mold smoke and takes damage
+    - torch goes out, I fail to get the new one out - I use luck and light it
+    - ronnic heals alric 1 point
+    - two asps comes out of basket
+    - 5 foot long snakes
+    - ronnic heals alric 3 more HP
+    - I back up and cast mage armor, 10
+    - the snakes come after but still ranging us
+    - the water slows
+    - I cast burning hands
+    - 2 damage, tey kinda like it cuz the water was cold
+    - alric cast burning hands
+    - does 3 damage
+    - snake attaks me I take one damage and I'm poisoned, I pass con but I feel hot and sweaty
+    - i take a step back and attack with my grappling hook
+    - snake misses alric
+    - ronnick throws a club and kills the final snake
+    - ronnick heals me
+    - back to the basket
+    - 300 silver, divvy it up
+    - 5 gems of different sizes of ruby, s worth 10G, 50G, 100G, 100G, 200G
+    - priest relizees secret door
+    - alric is out of spells, all fail
+    - we go back and drop off stuff and rest and heal
+    - alric's light spell works this time
+    - we go back to the crates
+    - ronnick cracks one open
+    - don't find anything
+    - another room, we hear noises but no voices
+    - we call out and it stops
+    - we hear the rotating hallway going
+    - we check out the room
+    - smells putrid in here
+    - holy symbol on the alter, looks like an eye
+    - 6 foot long lizard
+    - alric casts mage armor
+    - lizard hits priest for 7 points of damage; ronnick dies
+    - my mage armore fails
+    - alric casts burning hands, does only 1 damage
+    - lizard charges alric but trips
+    - i try and fail to stablize the priest
+    - alric attacks with burning hands
+    - 4 damage
+    - lizard charges alric and misses
+    - i try and fail to stabilize the priest
+    - alrick attacks with burning hands
+    - 4 damage
+    - the lizard runs down the hallway
+    - ronnick not passing con
+    - I try and fail to stabilize the priest
+    - alric stabilizes the priest
+    - we hear the lizard down the hallway
+    - ronnick crit fails cure wounds, pisses off diety, can't cast until big thing
+    - i trip over a dead body, fleeing into the room
+    - eaten in half, another hobgoblin
+    - alric pursues the lizard but misses
+    - lizard launches at alric and hits
+    - and takes 5 points of damage
+    - I cast mage armor AC14
+    - but then I freak out again seeing the lizard eating the dwarf
+    - alric stabs with dagger
+    - 2 points
+    - it dies
+    - alric cuts up the lizard make sure it's dead
+    - cuts out a solid meal of flesh
+    - harvests an organ (liver)
+    - could sell it or concot something
+    - +3 HP potion
+    - box of candles in the room
+    - hobgonlin has canteen of water, small sack of 40G and 2Gems worth 100g
+    - we're gonna clean up this room so ronnick and make a chapel to his god so they can get their spell back
+    - I donate 5G for the sacrifce
+    - alric and i go rest upsteairs and drop our stuff off and cook the HP stew
+    - we bring it back to ronnick and the hallway is not where we left it off
+    - 
