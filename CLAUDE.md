@@ -79,7 +79,7 @@ Two schemas exist — each system reads its own:
 - `character_info` — name, type, aliases, appearance, etc.
 - `attributes_and_skills` — keyed by attribute name (DEXTERITY, KNOWLEDGE, MECHANICAL, PERCEPTION, STRENGTH, TECHNICAL), each with a `base` die code and a `skills` dict
 - `meta_game` — force_points, character_points, wounds (text wound state)
-- `backstory`, `equipment`, `session_notes` — freeform; consumed by the narrator
+- `backstory`, `equipment`, `session_notes` — freeform; consumed by the narrator (see session-notes formats below)
 
 The banner for Star Wars D6 is built by `star_wars_d6.build_banner_lines()` (not `systems/banner.py`) and always includes the pinned difficulty table.
 
@@ -93,5 +93,17 @@ The main menu's "Relive an epic story" option calls `story_menu()` in `roll.py`,
 - `openai_compatible` — uses the `openai` SDK; set `base_url` for LM Studio or any OpenAI-compatible endpoint; `api_key` can be set directly in the config file
 
 The narrator prompt instructs the LLM to treat stat scores as ground truth — the gap between a character's self-image and their actual ability scores is treated as primary narrative material.
+
+The session-notes-style field (`session_notes` for Star Wars D6, `campaign_context` for Shadowdark) is found by `_find_session_field()` in `systems/narrator.py`, which accepts two shapes:
+- **legacy single-string form** — one block scalar containing inline `Session N:` headers, split via regex (`SESSION_HEADER_RE`)
+- **dict-per-session form** (preferred for new entries — gives each session its own fold/collapse arrow in editors) — keyed by session number (int or numeric string), each value its own block scalar, e.g.:
+  ```yaml
+  session_notes:
+    1: |
+      ...
+    2: |
+      ...
+  ```
+  `_split_sessions()` handles both transparently; there is no preamble support in the dict form.
 
 Any character (either schema) can optionally add a `session_transcripts` field — a dict keyed by session number (int or string, matched against the digits in that session's `Session N` header) mapping to a raw, unedited transcript of that session (e.g. from a voice recording). This is stripped out of the character-sheet YAML the LLM sees and instead passed alongside that session's raw notes. The narrator prompt (`SYSTEM_PROMPT_SESSION` in `systems/narrator.py`) instructs the LLM to treat the shorthand `session_notes` as ground truth and use the transcript only to enrich phrasing/texture where it corroborates the notes — anything the transcript adds that contradicts or isn't backed by the shorthand should be discarded, so a garbled recording can't pollute the narrative.

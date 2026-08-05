@@ -115,18 +115,39 @@ def get_model_choices() -> list[dict[str, str]]:
     return _model_choices(_load_config())
 
 
+def _is_session_dict(val: Any) -> bool:
+    if not isinstance(val, dict) or not val:
+        return False
+    return all(
+        (isinstance(k, int) or (isinstance(k, str) and k.isdigit())) and isinstance(v, str)
+        for k, v in val.items()
+    )
+
+
 def _find_session_field(data: dict[str, Any]) -> str | None:
     for key, val in data.items():
         if isinstance(val, str) and SESSION_HEADER_RE.search(val):
             return key
+        if _is_session_dict(val):
+            return key
     return None
 
 
-def _split_sessions(text: str) -> tuple[str, list[tuple[str, str]]]:
-    """Split a freeform notes field into (preamble, [(header, body), ...])."""
-    parts = SESSION_HEADER_RE.split(text)
+def _split_sessions(field: str | dict[Any, str]) -> tuple[str, list[tuple[str, str]]]:
+    """Split a sessions field into (preamble, [(header, body), ...]).
+
+    Supports the legacy single-string form (one block scalar with inline
+    ``Session N:`` headers) and the dict-per-session form (keyed by session
+    number, one block scalar per entry — gives each session its own fold
+    arrow in editors).
+    """
+    if isinstance(field, dict):
+        sessions = [(f"Session {number}", body.strip()) for number, body in field.items()]
+        return "", sessions
+
+    parts = SESSION_HEADER_RE.split(field)
     preamble = parts[0].strip()
-    sessions: list[tuple[str, str]] = []
+    sessions = []
     for i in range(1, len(parts), 2):
         header = parts[i].strip()
         body = parts[i + 1].strip() if i + 1 < len(parts) else ""
