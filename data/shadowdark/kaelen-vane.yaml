@@ -21,14 +21,14 @@ stats:
   wis: 7
   cha: 10
 gold: 40
-xp: 3
+xp: 7
 languages:
 - Common
 backstory: Urchin
 backstory_detail: You grew up in the merciless streets of a large city
 weapons: [grappling hook, club]
-items: [torch, torch, torch, canteen of water]
-home_storage: [100 silver, 5 gems of different sizes of ruby, s worth 10G, 50G, 100G, 100G, 200G, small sack of 35G and 2Gems worth 100g]
+items: [torch, torch, torch, canteen of water, +3HP potion, 100 silver, 5 gems of different sizes of ruby, s worth 10G, 50G, 100G, 100G, 200G, small sack of 35G and 2Gems worth 100g]
+home_storage: []
 spells: 
   tier_1:
     - "Burning Hands"
@@ -36,7 +36,7 @@ spells:
     - "Feather Fall"
 talents:
   - text: Gain advantage on casting one spell that you know
-    advantage_spell: Feather Fall
+    advantage_spell: Burning Hands
   - text: Gain advantage on a second spell
     advantage_spell: Mage Armor
 personality_and_hooks: ''
@@ -136,4 +136,57 @@ campaign_context: |
     - I donate 5G for the sacrifce
     - alric and i go rest upsteairs and drop our stuff off and cook the HP stew
     - we bring it back to ronnick and the hallway is not where we left it off
-    - 
+  Session 2: 
+    - jossu (derek) human fighter joins the party
+    - there's a small wrapped package in the home room
+    - 2 golden masks, and a note, be prepared tomorrow we will commit our honorarium to ghorm to seal our commitment
+    - kaelen-vane and alric put on the masks
+    - beware the herasy of the mage and maiden
+    - we question jossu but he's not a mage nor a maiden so we offer him water
+    - we all go down to ronnic in the new chapel
+    - ronnic can heal again
+    - (DM gives me a paper - I heard a rumor in the caravon that a giant eagle of pure fire dwells in the gilzai mountains)
+    - player knowledge - I remmeber that the priest eaten by the lizard had a bird faced mask
+    - bortherhood of the ghorm come ready for cerimony
+    - other two "can't" come, but might join to help
+    - they follow behind
+    - the brotherhood push symbol (8)
+    - and then push HOME
+    - they push a third button <- check with DM (8)
+    - 50ft hall heading south
+    - we come to an iron door (first of its kind) 3 lightening bolts on it
+    - they stop like 10 feet from the door and the lightening boolts light
+    - they say "by the great god ghorm" and htey start walking in
+    - room 70x40
+    - goolden bowl and statue of ghorm
+    - 30 guys heavily armed
+    - dead end room 
+    - promote worship of ghorm, fialty
+    - maybe I need to learn about ghorm
+    - they bodily take us out but also they're taking our things
+    - we can stay one more night and then they will gaurd the home room
+    - freeloader maybe trespasser definitly
+    - ronnic presses button 3
+    - the door beuyond opens and is painted black with tiny white stars
+    - another iron door with a star
+    - we check out button 5
+    - 2 10ft tall statues of women fighters wearing masks of the female statue
+    - single file through crossed spears only
+    - we go down the hallway
+    - we bypass a trap
+    - locked door
+    - iron door no symbol
+    - keyhole
+    - I knock, and now we hear footsteps and it unlocks and it opens
+    - 11 huge women
+    - maidens of madora
+    - they lower the spears
+    - yoink jonnus
+    - they offer jonnus to be liaison
+    - they throw us into the rotating hallway and hit button 7
+    - it rotates one spot
+    - we light another torch
+    - we stunned them and hit a button and rotate back to home
+    - 1+5 4+8 linked
+    - we hoarde supplies from the ghorm in the chapel
+    - we'll explore the rest of the pyramid
